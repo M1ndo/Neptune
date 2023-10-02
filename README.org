@@ -1,0 +1,45 @@
+#+title: Neptune
+#+AUTHOR: ybenel (m1ndo)
+#+HTML: <img src="imgs/neptune.png" align="right" width="400" height="400">
+#+HTML: <img src="imgs/nepscreen.png" align="left" width="400" height="400">
+Neptune is a virtual application that produces a sound upon key activation, resembling a physical mechanical keyboard. Unlike its real-life counterpart, Neptune spares you from disturbing those nearby. It bears a striking resemblance to mechvibes, but with notable advantages: superior speed, being coded in Go instead of JavaScript and Electron, thus eliminating excessive RAM and CPU consumption.
+
+* Installation / Buildings.
+By default i provide pre-built binaries for both Linux and Windows,
+I'd include MacOS as well if i had a MacOs machine to build the app, although it is possible
+to cross-compile from Linux to MacOs its very troublesome and requires building a toolchain and whatnot.
+** Binaries.
+Both Windows And Linux binaries are for x86_64 architecture only.
+More to come soon.
+Headover to the [[https://github.com/M1ndo/Neptune/releases/tag/v1.0.0][Releases]] and download the appropriate build for your machine.
+*** Linux
+To install Neptune your Linux distribution just run .
+#+begin_src bash
+mkdir Neptune && tar -xf Neptune.tar.xz -C Neptune/ && cd Neptune; sudo make install
+#+end_src
+** Building.
+To build *Neptune* you'll have to satisfy few requirements.
+- Golang version >1.21
+- GCC or Clang compiler
+- Mingw64 (Windows)
+- o64-clang / Clang (MacOS)
+*** Linux / MacOs
+#+begin_src bash
+CGO_ENABLED=1 GO111MODULE=on go build . # Be inside of Neptune Directory.
+#+end_src
+*** Windows
+#+begin_src bash
+GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ go build -ldflags -H=windowsgui .
+#+end_src
+* Keysounds.
+By default nk-cream keysounds are embedded in the app so it doesn't require any assets.
+If you want to add your own Keysounds, a guide will be published soon.
+
+* Donate.
+If you wanna consider supporting this project by donating, please spare some cash [[https://ybenel.cf/DonateToNeptune][Here]]
+
+* Author
+Written by [[https://github.com/m1ndo][ybenel]]
+* License
+AGPLv3
+#  LocalWords:  Golang
