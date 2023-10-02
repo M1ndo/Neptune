@@ -1,0 +1,18 @@
+[Details]
+  Icon = "icon.png"
+  Name = "Neptune"
+  ID = "cf.ybenel.Neptune"
+  Version = "1.0.0"
+  Build = 3
+
+[Development]
+  HelperText = "Neptune Keysounds Made Free"
+
+[Release]
+  HelperText = "Neptune Keysounds Without Going Broke"
+
+[LinuxAndBSD]
+  GenericName = "Neptune"
+  Categories = ["Release"]
+  Comment = "Enjoy free the free sounds without killing your cpu and ram"
+  Keywords = ["keyboard", "sound"]
