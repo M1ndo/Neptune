@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 type SConfig struct {
@@ -20,14 +21,44 @@ type Config struct {
 	KSound map[string]string `json:"defines"`
 }
 
-func (c *SConfig) FindSounds() {
-	c.FSounds = make(map[string]string)
-	if c.SoundDir == "" {
+func GetUserSoundDir() (string, error) {
+	var SoundDir string
+	switch runtime.GOOS {
+	case "windows":
+		appDataDir, err := os.UserConfigDir()
+		if err != nil {
+			return "", err
+		}
+		SoundDir = filepath.Join(appDataDir, "Neptune")
+	case "darwin":
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
-			c.AppIn.Logger.Log.Error(err)
+			return "", err
 		}
-		c.SoundDir = filepath.Join(homeDir, "Downloads", "Neptune")
+		SoundDir = filepath.Join(homeDir, "Library", "Application Support", "Neptune")
+	default: // Linux and other Unix-like systems
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", err
+		}
+		SoundDir = filepath.Join(homeDir, ".local", "share", "Neptune")
+	}
+	err := os.MkdirAll(SoundDir, 0755)
+	if err != nil {
+		return "", err
+	}
+	return SoundDir, nil
+}
+
+// Find sounds in a directory.
+func (c *SConfig) FindSounds() error {
+	c.FSounds = make(map[string]string)
+	if c.SoundDir == "" {
+		dir, err := GetUserSoundDir()
+		if err != nil {
+			return err
+		}
+		c.SoundDir = dir
 	}
 	err := filepath.Walk(c.SoundDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -37,14 +68,19 @@ func (c *SConfig) FindSounds() {
 			return nil
 		}
 		if info.IsDir() {
-			c.AppIn.Logger.Log.Infof("Found Sound! %s", info.Name())
-			c.FSounds[info.Name()] = path
+			configFile := filepath.Join(path, "config.json")
+			_, err := os.Stat(configFile)
+			if err == nil {
+				c.AppIn.Logger.Log.Infof("Found Sound! %s", info.Name())
+				c.FSounds[info.Name()] = path
+			}
 		}
 		return nil
 	})
 	if err != nil {
 		c.AppIn.Logger.Log.Debug(err)
 	}
+	return err
 }
 
 // Open and read config file
@@ -61,7 +97,7 @@ func (c *SConfig) ReadConfig() error {
 			return err
 		}
 	default:
-		file := c.FSounds[c.DefaultSound] + "/config.json"
+		file := filepath.Join(c.FSounds[c.DefaultSound], "/config.json")
 		fopen, err := os.Open(file)
 		if err != nil {
 			return err

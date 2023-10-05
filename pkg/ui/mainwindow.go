@@ -10,8 +10,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	// "fyne.io/fyne/v2/storage"
 	// xwidget "fyne.io/x/fyne/widget"
+	"github.com/getlantern/systray"
 )
 
 type UiApp struct {
@@ -26,6 +26,7 @@ func (ui *UiApp) NewApp(SoundL fyne.CanvasObject, start func(), stop func()) err
 	w.Resize(fyne.NewSize(460, 400))
 	w.SetFixedSize(true)
 	w.CenterOnScreen()
+	w.SetCloseIntercept(func() {w.Hide()})
 	// Create a box container
 	// box := container.NewVBox()
 	box := container.New(layout.NewVBoxLayout())
@@ -109,6 +110,7 @@ func (Ui *UiApp) SoundsList(SoundList []string, f func(string)) fyne.CanvasObjec
 	return AvailableSounds
 }
 
+// Parse and url
 func parseURL(urlStr string) *url.URL {
 	link, err := url.Parse(urlStr)
 	if err != nil {
@@ -116,4 +118,30 @@ func parseURL(urlStr string) *url.URL {
 	}
 
 	return link
+}
+
+// Register systray
+func (ui *UiApp) SystrayRun() {
+	systray.Run(ui.OnReady, nil)
+}
+
+// onReady() For systray
+func (ui *UiApp) OnReady() {
+	systray.SetTemplateIcon(IconRes.Content(), IconRes.Content())
+	systray.SetTitle("Neptune")
+	systray.SetTooltip("Neptune")
+	systray.AddSeparator()
+	mShow := systray.AddMenuItem("Show", "Show the main app")
+	mQuitOrig := systray.AddMenuItem("Quit", "Quit the whole app")
+	go func() {
+		for {
+			select {
+			case <-mShow.ClickedCh:
+				ui.MainWindow.Show()
+			case <-mQuitOrig.ClickedCh:
+				ui.MainWindow.Close()
+				systray.Quit()
+			}
+		}
+	}()
 }

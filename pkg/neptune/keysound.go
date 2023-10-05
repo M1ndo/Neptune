@@ -2,6 +2,7 @@ package neptune
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"path"
@@ -53,20 +54,20 @@ func GetKeys(key string) *fyne.StaticResource {
 	return data
 }
 
-func (Ctx *NewContextPlayer) PlaySound(file string) error {
+func (Ctx *NewContextPlayer) PlaySound(code string) error {
 	var f []byte
 	var err error
 	if Ctx.AppIn.Config.DefaultSound != "nk-cream" {
-		file := Ctx.AppIn.Config.FSounds[Ctx.AppIn.Config.DefaultSound] + "/" + Ctx.AppIn.Config.Config.KSound[file]
+		file := fmt.Sprintf("%s/%s",Ctx.AppIn.Config.FSounds[Ctx.AppIn.Config.DefaultSound], code)
 		f, err = os.ReadFile(file)
 		if err != nil {
 			return err
 		}
 	} else {
-		f = GetKeys(file).StaticContent
+		f = GetKeys(code).StaticContent
 	}
 	fBytes := bytes.NewReader(f)
-	decoded, err := decoder(fBytes, path.Ext(file))
+	decoded, err := decoder(fBytes, path.Ext(code))
 	if err != nil {
 		return err
 	}

@@ -14,8 +14,9 @@ func main() {
 		if err != nil {
 			App.Logger.Log.Fatal(err)
 		}
+		go uiApp.SystrayRun()
 		uiApp.MainWindow.ShowAndRun()
 	} else {
-		App.AppRun()
+		App.Sys.Init()
 	}
 }

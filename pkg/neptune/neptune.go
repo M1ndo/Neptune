@@ -13,27 +13,37 @@ type App struct {
 	Logger        *loggdb.Logger
 	Running       bool
 	CfgVars       *SelectVars
+	Sys           *Sys
 }
 
 func NewApp() *App {
 	a := &App{
-		Config:        &SConfig{SoundDir: "sounds/", DefaultSound: "nk-cream"},
+		Config:        &SConfig{SoundDir: "", DefaultSound: "nk-cream"},
 		KeyEvent:      &KeyEvent{},
 		ContextPlayer: &NewContextPlayer{},
 		Logger:        &loggdb.Logger{},
 		CfgVars:       &SelectVars{},
 		Running:       false,
+		Sys:           &Sys{},
 	}
 	// Set Logger
-	a.Logger.NewLogger()
+	a.Logger = setLogger()
 	// Cli args
 	a.CfgVars = ParseFlags()
+	a.Config.SoundDir = a.CfgVars.Sounddir
 	if a.CfgVars.Soundkey != "" {
 		a.Config.DefaultSound = a.CfgVars.Soundkey
 	}
+	if a.CfgVars.Download {
+		if _, err := DownloadSounds(); err != nil {
+			a.Logger.Log.Error(err)
+		}
+	}
 	// Find Sounds
 	a.Config.AppIn = a
-	a.Config.FindSounds()
+	if err := a.Config.FindSounds(); err != nil {
+		a.Logger.Log.Error(err)
+	}
 	if err := a.Config.ReadConfig(); err != nil {
 		a.Logger.Log.Fatal(err)
 	}
@@ -42,6 +52,8 @@ func NewApp() *App {
 	if err := a.ContextPlayer.NewContext(); err != nil {
 		a.Logger.Log.Fatal(err)
 	}
+	// Sys
+	a.Sys.App = a
 	return a
 }
 
@@ -58,7 +70,6 @@ func (a *App) AppRun() {
 			if event.KindCode() == 5 {
 				code := strconv.Itoa(int(event.Keycode()))
 				if a.Config.Config.KSound[code] != "" {
-					// sfile := a.Config.FSounds[a.Config.DefaultSound] + "/" + a.Config.Config.KSound[code]
 					if err := a.ContextPlayer.PlaySound(a.Config.Config.KSound[code]); err != nil {
 						a.Logger.Log.Error(err)
 					}
@@ -83,14 +94,34 @@ func (a *App) AppStop() {
 // List Found Sounds.
 func (a *App) FoundSounds() []string {
 	var Fsounds []string
+	Fsounds = append(Fsounds, "nk-cream")
 	for Found := range a.Config.FSounds {
-		Fsounds = append(Fsounds, Found)
+		if Found != "nk-cream" {
+			Fsounds = append(Fsounds, Found)
+		}
 	}
 	return Fsounds
 }
 
 // Set Soundkeys
 func (a *App) SetSounds(sound string) {
-	a.Logger.Log.Infof("Executed and sat %s", sound)
+	a.Logger.Log.Infof("Now using keysounds %s", sound)
 	a.Config.DefaultSound = sound
+	if err := a.Config.ReadConfig(); err != nil {
+		a.Logger.Log.Fatal(err)
+	}
+}
+
+// Set Logger Options
+func setLogger() *loggdb.Logger {
+	dir, _ := GetUserSoundDir()
+	NewLogger := &loggdb.Logger{}
+	NewLogger.LogDir = dir + "/log"
+	CustomOpt := &loggdb.CustomOpt{
+		Prefix:          "Neptune 👾 ",
+		ReportTimestamp: true,
+	}
+	NewLogger.LogOptions = CustomOpt
+	NewLogger.NewLogger()
+	return NewLogger
 }
