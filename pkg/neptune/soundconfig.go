@@ -71,7 +71,7 @@ func (c *SConfig) FindSounds() error {
 			configFile := filepath.Join(path, "config.json")
 			_, err := os.Stat(configFile)
 			if err == nil {
-				c.AppIn.Logger.Log.Infof("Found Sound! %s", info.Name())
+				// c.AppIn.Logger.Log.Infof("Found Sound! %s", info.Name())
 				c.FSounds[info.Name()] = path
 			}
 		}

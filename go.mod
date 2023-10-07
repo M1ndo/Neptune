@@ -10,7 +10,8 @@ require (
 	github.com/ebitengine/oto/v3 v3.1.0
 	github.com/getlantern/systray v1.2.2
 	github.com/hajimehoshi/ebiten/v2 v2.6.0
-	github.com/m1ndo/LogGdb v1.0.0
+	github.com/jedib0t/go-pretty/v6 v6.4.8
+	github.com/m1ndo/LogGdb v1.0.1-0.20231006171015-62f7cce9bcc1
 	github.com/robotn/gohook v0.41.0
 	github.com/ulikunitz/xz v0.5.11
 )
@@ -19,7 +20,7 @@ require (
 	fyne.io/systray v1.10.1-0.20230722100817-88df1e0ffa9a // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/harmonica v0.2.0 // indirect
-	github.com/charmbracelet/log v0.2.4 // indirect
+	github.com/charmbracelet/log v0.2.5 // indirect
 	github.com/containerd/console v1.0.4-0.20230313162750-1ae8d489ac81 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/ebitengine/purego v0.5.0 // indirect

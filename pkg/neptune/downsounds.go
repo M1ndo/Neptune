@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -65,6 +66,7 @@ type progressWriter struct {
 	onProgress func(float64)
 }
 
+// Start writing
 func (pw *progressWriter) Start() {
 	_, err := io.Copy(pw.file, io.TeeReader(pw.reader, pw))
 	if err != nil {
@@ -72,6 +74,7 @@ func (pw *progressWriter) Start() {
 	}
 }
 
+// Write progress
 func (pw *progressWriter) Write(p []byte) (int, error) {
 	pw.downloaded += len(p)
 	if pw.total > 0 && pw.onProgress != nil {
@@ -80,6 +83,7 @@ func (pw *progressWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// Get file response size.
 func getResponse(url string) (*http.Response, error) {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -91,24 +95,51 @@ func getResponse(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-func downloadSounds(p *tea.Program) error {
-	errCh := make(chan error)
+
+// Download files concurrently.
+func downloadSounds(p *tea.Program) chan error {
+	errCh := make(chan error, len(sounds))
+	successCh := make(chan struct{}, len(sounds))
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+
 	for _, url := range sounds {
 		fullURL := BaseURL + url
+		down, err := checkDown(soundsInfo[url])
+		if !down {
+			// fmt.Println(fmt.Sprintf("Soundkey %s already exists!", soundsInfo[url]))
+			mu.Lock()
+			Xindex++
+			mu.Unlock()
+			continue
+		}
 
 		resp, err := getResponse(fullURL)
 		if err != nil {
-			return fmt.Errorf("could not get response for %s: %w", fullURL, err)
+			errCh <- fmt.Errorf("could not get response for %s: %w", fullURL, err)
+			mu.Lock()
+			Xindex++
+			mu.Unlock()
+			continue
 		}
 		defer resp.Body.Close()
 
 		if resp.ContentLength <= 0 {
-			return fmt.Errorf("can't parse content length for %s, aborting download", fullURL)
+			errCh <- fmt.Errorf("can't parse content length for %s, aborting download", fullURL)
+			mu.Lock()
+			Xindex++
+			mu.Unlock()
+			continue
 		}
+
 		filename := filepath.Join(outdir, filepath.Base(url))
 		file, err := os.Create(filename)
 		if err != nil {
-			return fmt.Errorf("could not create file %s: %w", filename, err)
+			errCh <- fmt.Errorf("could not create file %s: %w", filename, err)
+			mu.Lock()
+			Xindex++
+			mu.Unlock()
+			continue
 		}
 		defer file.Close()
 
@@ -135,27 +166,37 @@ func downloadSounds(p *tea.Program) error {
 		p = tea.NewProgram(m)
 		go pw.Start()
 		if _, err := p.Run(); err != nil {
-			return fmt.Errorf("error running program: %w", err)
+			errCh <- fmt.Errorf("error running program: %w", err)
+			mu.Lock()
+			Xindex++
+			mu.Unlock()
+			continue
 		}
+
+		mu.Lock()
 		Xindex++
+		wg.Add(1)
 		go func(url, filename string) {
-			// Wait Till It Finishes
+			defer wg.Done()
 			err := waitForDownloadCompletion(filename, outdir, soundsInfo[url], resp.ContentLength)
 			if err != nil {
 				errCh <- fmt.Errorf("failed to wait for download completion: %w", err)
 				return
 			}
-			errCh <- nil
+			successCh <- struct{}{}
 		}(url, filename)
+		mu.Unlock()
 	}
-	for range sounds {
-		if err := <-errCh; err != nil {
-			return err
-		}
-	}
-	return nil
+
+	go func() {
+		wg.Wait()
+		close(errCh)
+		close(successCh)
+	}()
+	return errCh
 }
 
+// Wait for dwonload to finish then decompresss
 func waitForDownloadCompletion(filename, outdir, outfile string, total_length int64) error {
 	for {
 		fi, err := os.Stat(filename)
@@ -167,6 +208,9 @@ func waitForDownloadCompletion(filename, outdir, outfile string, total_length in
 			destPath := filepath.Join(outdir, outfile)
 			err = decompressTarXZ(filename, destPath)
 			if err != nil {
+				return err
+			}
+			if err = deleteFile(filename); err != nil {
 				return err
 			}
 			break
@@ -221,7 +265,7 @@ func decompressTarXZ(srcPath, destPath string) error {
 	return nil
 }
 
-func DownloadSounds() (string, error) {
+func DownloadSounds() (string, chan error) {
 	p := tea.NewProgram(model{})
 	err := downloadSounds(p)
 	if err != nil {
@@ -232,6 +276,26 @@ func DownloadSounds() (string, error) {
 	return msg, nil
 }
 
-// // Check if files are downloaded
-// func CheckDown() {
-// }
+// Delete after decompression
+func deleteFile(path string) error {
+	err := os.Remove(path)
+	if err != nil {
+		return fmt.Errorf("failed to delete file: %w", err)
+	}
+	return nil
+}
+
+// Check if files are downloaded
+func checkDown(name string) (bool, error) {
+	dirPath := filepath.Join(outdir, name)
+
+	_, err := os.Stat(dirPath)
+	if err == nil {
+		return false, nil
+	}
+	if !os.IsNotExist(err) {
+		return true, fmt.Errorf("failed to check directory existence: %w", err)
+	}
+
+	return true, nil
+}

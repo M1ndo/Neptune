@@ -9,6 +9,7 @@ type SelectVars struct {
 	Soundkey string
 	Sounddir string
 	Download bool
+	ListSounds bool
 }
 
 func ParseFlags() *SelectVars {
@@ -18,6 +19,7 @@ func ParseFlags() *SelectVars {
 	flag.StringVar(&cfgVars.Soundkey,"soundkey", "", "Soundkey to use default (nk-cream)")
 	flag.StringVar(&cfgVars.Sounddir, "sounddir", soundDir, "Sounds directory")
 	flag.BoolVar(&cfgVars.Download, "download", false, "Download all other soundkeys")
+	flag.BoolVar(&cfgVars.ListSounds, "lst", false, "List all available sounds")
 	flag.Parse()
 	return cfgVars
 }

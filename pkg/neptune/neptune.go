@@ -1,6 +1,7 @@
 package neptune
 
 import (
+	"os"
 	"strconv"
 
 	loggdb "github.com/m1ndo/LogGdb"
@@ -31,19 +32,29 @@ func NewApp() *App {
 	// Cli args
 	a.CfgVars = ParseFlags()
 	a.Config.SoundDir = a.CfgVars.Sounddir
-	if a.CfgVars.Soundkey != "" {
-		a.Config.DefaultSound = a.CfgVars.Soundkey
-	}
-	if a.CfgVars.Download {
-		if _, err := DownloadSounds(); err != nil {
-			a.Logger.Log.Error(err)
-		}
-	}
 	// Find Sounds
 	a.Config.AppIn = a
 	if err := a.Config.FindSounds(); err != nil {
 		a.Logger.Log.Error(err)
 	}
+	// Set Args
+	switch {
+	case a.CfgVars.Soundkey != "":
+		a.Config.DefaultSound = a.CfgVars.Soundkey
+	case a.CfgVars.Download:
+		_, errCh := DownloadSounds()
+		for err := range errCh {
+			a.Logger.Log.Error(err)
+		}
+	case a.CfgVars.ListSounds:
+		Fsounds := a.FoundSounds()
+		PrintTableWithAliens(Fsounds)
+		os.Exit(0)
+		// if  err != nil {
+		// 	a.Logger.Log.Error(err)
+		// }
+	}
+	// Read soundkey config
 	if err := a.Config.ReadConfig(); err != nil {
 		a.Logger.Log.Fatal(err)
 	}

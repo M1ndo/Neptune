@@ -2,6 +2,8 @@ package neptune
 
 import (
 	"fmt"
+	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -9,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/jedib0t/go-pretty/v6/table"
 )
 
 var (
@@ -17,6 +20,7 @@ var (
 	doneStyle           = lipgloss.NewStyle().Margin(1, 2)
 	checkMark           = lipgloss.NewStyle().Foreground(lipgloss.Color("42")).SetString("✓")
 	helpStyle           = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
+	baseStyle = lipgloss.NewStyle().BorderStyle(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("240"))
 )
 
 const (
@@ -98,4 +102,29 @@ func (m model) View() string {
 	pad := strings.Repeat(" ", padding)
 
 	return spin + info + pad + prog + pkgCount
+}
+
+// Print Table with Available Sounds
+func PrintTableWithAliens(list []string) {
+	alien := lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00")).Render("♪ ")
+	// Generate a random color for each row
+	colors := generateRandomColors(len(list))
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+	t.SetTitle(lipgloss.NewStyle().Foreground(lipgloss.Color("#FF00FF")).Render("Available Sounds Keys"))
+	for i, str := range list {
+		row := table.Row{alien+lipgloss.NewStyle().Foreground(lipgloss.Color(colors[i])).Render(str)}
+		t.AppendRow(row)
+	}
+	t.Render()
+}
+
+// generate random colors
+func generateRandomColors(count int) []string {
+	colors := make([]string, count)
+	for i := 0; i < count; i++ {
+		color := fmt.Sprintf("#%06x", rand.Intn(0xffffff))
+		colors[i] = color
+	}
+	return colors
 }
