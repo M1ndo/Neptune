@@ -21,7 +21,7 @@ func NewApp() *App {
 	a := &App{
 		Config:        &SConfig{SoundDir: "", DefaultSound: "nk-cream"},
 		KeyEvent:      &KeyEvent{},
-		ContextPlayer: &NewContextPlayer{},
+		ContextPlayer: &NewContextPlayer{Cache: make(map[string][]byte)},
 		Logger:        &loggdb.Logger{},
 		CfgVars:       &SelectVars{},
 		Running:       false,
@@ -50,9 +50,6 @@ func NewApp() *App {
 		Fsounds := a.FoundSounds()
 		PrintTableWithAliens(Fsounds)
 		os.Exit(0)
-		// if  err != nil {
-		// 	a.Logger.Log.Error(err)
-		// }
 	}
 	// Read soundkey config
 	if err := a.Config.ReadConfig(); err != nil {
@@ -121,6 +118,7 @@ func (a *App) SetSounds(sound string) {
 	if err := a.Config.ReadConfig(); err != nil {
 		a.Logger.Log.Fatal(err)
 	}
+	a.ContextPlayer.ClearCache()
 }
 
 // Set Logger Options

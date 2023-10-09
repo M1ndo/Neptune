@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -20,9 +21,13 @@ type NewContextPlayer struct {
 	Player    *oto.Player
 	Context   *oto.Context
 	readyChan chan struct{}
+	Cache     map[string][]byte
+	mutex     sync.Mutex
+	rwmutex   sync.RWMutex
 	AppIn     *App
 }
 
+// Decode the file.
 func decoder(fBytes *bytes.Reader, ext string) (io.Reader, error) {
 	switch {
 	case ext == ".wav":
@@ -35,6 +40,7 @@ func decoder(fBytes *bytes.Reader, ext string) (io.Reader, error) {
 	return nil, nil
 }
 
+// Create new ContextPlayer
 func (Ctx *NewContextPlayer) NewContext() error {
 	Ctx.Options = &oto.NewContextOptions{
 		SampleRate:   48000,
@@ -49,17 +55,51 @@ func (Ctx *NewContextPlayer) NewContext() error {
 	return nil
 }
 
+// Get Keys
 func GetKeys(key string) *fyne.StaticResource {
 	data := sdata.KeyList[key]
 	return data
 }
 
+// Store new pressed keys in memory.
+func (Ctx *NewContextPlayer) readCache(code, file string) ([]byte, error) {
+	Ctx.rwmutex.RLock()
+	soundfile, exists := Ctx.Cache[code]
+	Ctx.rwmutex.RUnlock()
+	if exists {
+		Ctx.AppIn.Logger.Log.Debugf("Soundfile %s exists in memory cache", file)
+		return soundfile, nil
+	}
+
+	Ctx.mutex.Lock()
+	defer Ctx.mutex.Unlock()
+
+	soundFile, err := os.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	Ctx.rwmutex.Lock()
+	defer Ctx.rwmutex.Unlock()
+	Ctx.Cache[code] = soundFile
+	Ctx.AppIn.Logger.Log.Debugf("code %s memcache++", code)
+	return soundFile, nil
+}
+
+// Clear Cache
+func (Ctx *NewContextPlayer) ClearCache() {
+	for key := range Ctx.Cache {
+		delete(Ctx.Cache, key)
+	}
+}
+
+// Play Sounds
 func (Ctx *NewContextPlayer) PlaySound(code string) error {
 	var f []byte
 	var err error
 	if Ctx.AppIn.Config.DefaultSound != "nk-cream" {
-		file := fmt.Sprintf("%s/%s",Ctx.AppIn.Config.FSounds[Ctx.AppIn.Config.DefaultSound], code)
-		f, err = os.ReadFile(file)
+		file := fmt.Sprintf("%s/%s", Ctx.AppIn.Config.FSounds[Ctx.AppIn.Config.DefaultSound], code)
+		f, err = Ctx.readCache(code, file)
 		if err != nil {
 			return err
 		}
@@ -80,7 +120,7 @@ func (Ctx *NewContextPlayer) PlaySound(code string) error {
 		}
 		err := Ctx.Player.Close()
 		if err != nil {
-			panic("Player.Close failed: " + err.Error())
+			Ctx.AppIn.Logger.Log.Error(err)
 		}
 	}()
 	return nil
