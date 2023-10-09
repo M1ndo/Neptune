@@ -1,6 +1,7 @@
 package neptune
 
 import (
+	"math/rand"
 	"os"
 	"strconv"
 
@@ -50,6 +51,8 @@ func NewApp() *App {
 		Fsounds := a.FoundSounds()
 		PrintTableWithAliens(Fsounds)
 		os.Exit(0)
+	case a.CfgVars.Verbose:
+		a.Logger.Log.SetLevel(loggdb.Debug)
 	}
 	// Read soundkey config
 	if err := a.Config.ReadConfig(); err != nil {
@@ -133,4 +136,11 @@ func setLogger() *loggdb.Logger {
 	NewLogger.LogOptions = CustomOpt
 	NewLogger.NewLogger()
 	return NewLogger
+}
+
+// Random Keysound
+func (a *App) AppRand() {
+	Sounds := a.FoundSounds()
+	randSound := Sounds[rand.Intn(len(Sounds))]
+	a.SetSounds(randSound)
 }

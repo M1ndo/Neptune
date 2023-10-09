@@ -21,6 +21,7 @@ func (App *Sys) onReady() {
 	systray.AddSeparator()
 	mStart := systray.AddMenuItem("Start", "Start the soundkeys")
 	mPause := systray.AddMenuItem("Stop", "Stop the soundkeys")
+	mRand := systray.AddMenuItem("Rand", "Use a random soundkey")
 	mQuitOrig := systray.AddMenuItem("Quit", "Quit the whole app")
 	go func() {
 		for {
@@ -29,6 +30,8 @@ func (App *Sys) onReady() {
 				App.AppRun()
 			case <-mPause.ClickedCh:
 				App.AppStop()
+			case <-mRand.ClickedCh:
+				App.AppRand()
 			case <-mQuitOrig.ClickedCh:
 				systray.Quit()
 			}
