@@ -39,21 +39,7 @@ func NewApp() *App {
 		a.Logger.Log.Error(err)
 	}
 	// Set Args
-	switch {
-	case a.CfgVars.Soundkey != "":
-		a.Config.DefaultSound = a.CfgVars.Soundkey
-	case a.CfgVars.Download:
-		_, errCh := DownloadSounds()
-		for err := range errCh {
-			a.Logger.Log.Error(err)
-		}
-	case a.CfgVars.ListSounds:
-		Fsounds := a.FoundSounds()
-		PrintTableWithAliens(Fsounds)
-		os.Exit(0)
-	case a.CfgVars.Verbose:
-		a.Logger.Log.SetLevel(loggdb.Debug)
-	}
+	handleArguments(a)
 	// Read soundkey config
 	if err := a.Config.ReadConfig(); err != nil {
 		a.Logger.Log.Fatal(err)
@@ -68,6 +54,7 @@ func NewApp() *App {
 	return a
 }
 
+// App Run
 func (a *App) AppRun() {
 	if a.Running {
 		a.Logger.Log.Warn("App is already running")
@@ -77,22 +64,36 @@ func (a *App) AppRun() {
 	evChan := a.KeyEvent.StartEven()
 	a.Logger.Log.Infof("Using Selected Sound %s, ", a.Config.DefaultSound)
 	for ev := range evChan {
-		go func(event Event) {
-			if event.KindCode() == 5 {
-				code := strconv.Itoa(int(event.Keycode()))
-				if a.Config.Config.KSound[code] != "" {
-					if err := a.ContextPlayer.PlaySound(a.Config.Config.KSound[code]); err != nil {
-						a.Logger.Log.Error(err)
-					}
-				}
-			}
-		}(&CustomEvent{
+		go a.handleEvent(&CustomEvent{
 			Kind:     ev.Kind,
-			Keycodes: ev.Keycode,
+			Keycodes: ev.Rawcode,
 		})
 	}
 }
 
+// Handle events
+func (a *App) handleEvent(event *CustomEvent) {
+	keycode := GetKeyCode(event.Keycodes)
+	code := strconv.Itoa(int(keycode))
+
+	if event.Kind == KeyDown {
+		a.playSound(code, true)
+	} else if event.Kind == KeyUp {
+		a.playSound(code, false)
+	}
+}
+
+// Play
+func (a *App) playSound(code string, event bool) {
+	if sound := a.Config.Config.KSound[code]; sound != "" {
+		a.Logger.Log.Infof("Playing sound %s", sound)
+		if err := a.ContextPlayer.PlaySound(sound, event); err != nil {
+			a.Logger.Log.Error(err)
+		}
+	}
+}
+
+// App Stop
 func (a *App) AppStop() {
 	if !a.Running {
 		a.Logger.Log.Warn("Can't stop and app that is not running")
@@ -143,4 +144,25 @@ func (a *App) AppRand() {
 	Sounds := a.FoundSounds()
 	randSound := Sounds[rand.Intn(len(Sounds))]
 	a.SetSounds(randSound)
+}
+
+// Handle arguments
+func handleArguments(a *App) {
+	if a.CfgVars.Soundkey != "" {
+		a.Config.DefaultSound = a.CfgVars.Soundkey
+	}
+	if a.CfgVars.Download {
+		_, errCh := DownloadSounds()
+		for err := range errCh {
+			a.Logger.Log.Error(err)
+		}
+	}
+	if a.CfgVars.ListSounds {
+		Fsounds := a.FoundSounds()
+		PrintTableWithAliens(Fsounds)
+		os.Exit(0)
+	}
+	if a.CfgVars.Verbose {
+		a.Logger.Log.SetLevel(loggdb.Debug)
+	}
 }

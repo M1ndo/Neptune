@@ -15,10 +15,14 @@ type Event interface {
 }
 
 type CustomEvent struct {
-	Kind    uint8
+	Kind     uint8
 	Keycodes uint16
 }
 
+const (
+	KeyDown = 3
+	KeyUp   = 5
+)
 
 func NewKeyEvent() *KeyEvent {
 	return &KeyEvent{}
@@ -47,4 +51,8 @@ func (ce CustomEvent) KindCode() uint8 {
 
 func (ce CustomEvent) Keycode() uint16 {
 	return ce.Keycodes
+}
+
+func (k *KeyEvent) CodeToChar(r uint16) string {
+	return hook.RawcodetoKeychar(r)
 }

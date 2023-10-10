@@ -94,7 +94,7 @@ func (Ctx *NewContextPlayer) ClearCache() {
 }
 
 // Play Sounds
-func (Ctx *NewContextPlayer) PlaySound(code string) error {
+func (Ctx *NewContextPlayer) PlaySound(code string, event bool) error {
 	var f []byte
 	var err error
 	if Ctx.AppIn.Config.DefaultSound != "nk-cream" {
