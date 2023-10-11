@@ -33,13 +33,13 @@ func NewApp() *App {
 	// Cli args
 	a.CfgVars = ParseFlags()
 	a.Config.SoundDir = a.CfgVars.Sounddir
-	// Find Sounds
 	a.Config.AppIn = a
+	// Set Args
+	handleArguments(a)
+	// Find Sounds
 	if err := a.Config.FindSounds(); err != nil {
 		a.Logger.Log.Error(err)
 	}
-	// Set Args
-	handleArguments(a)
 	// Read soundkey config
 	if err := a.Config.ReadConfig(); err != nil {
 		a.Logger.Log.Fatal(err)
@@ -74,20 +74,34 @@ func (a *App) AppRun() {
 // Handle events
 func (a *App) handleEvent(event *CustomEvent) {
 	keycode := GetKeyCode(event.Keycodes)
-	code := strconv.Itoa(int(keycode))
-
-	if event.Kind == KeyDown {
-		a.playSound(code, true)
-	} else if event.Kind == KeyUp {
-		a.playSound(code, false)
+	rawcode := strconv.Itoa(int(keycode))
+	code := CodeToChar(keycode)
+	if a.Config.Config.IsMulti {
+		switch event.Kind {
+		case KeyDown:
+			_, loaded := a.ContextPlayer.keyrelease.LoadOrStore(keycode, true)
+			if loaded {
+				return
+			}
+			a.Logger.Log.Debugf("Clicked down %s keycode %s, Keychar %s", code, rawcode, a.KeyEvent.CodeToChar(keycode))
+			a.playSound(code, false)
+    case KeyUp:
+			a.ContextPlayer.keyrelease.Delete(keycode)
+			a.Logger.Log.Debugf("Clicked up %s keycode %s, Keychar %s", code, rawcode, a.KeyEvent.CodeToChar(keycode))
+			a.playSound(code, true)
+		}
+	} else {
+		if event.Kind == KeyUp {
+			a.Logger.Log.Debugf("Playing keycode %s, Keychar %s", rawcode, a.KeyEvent.CodeToChar(keycode))
+			a.playSound(code, false)
+		}
 	}
 }
 
 // Play
 func (a *App) playSound(code string, event bool) {
-	if sound := a.Config.Config.KSound[code]; sound != "" {
-		a.Logger.Log.Infof("Playing sound %s", sound)
-		if err := a.ContextPlayer.PlaySound(sound, event); err != nil {
+	if code != "" {
+		if err := a.ContextPlayer.PlaySound(code, event); err != nil {
 			a.Logger.Log.Error(err)
 		}
 	}
@@ -123,6 +137,9 @@ func (a *App) SetSounds(sound string) {
 		a.Logger.Log.Fatal(err)
 	}
 	a.ContextPlayer.ClearCache()
+	if a.Config.DefaultSound == "nk-cream" {
+		a.Config.Config.IsMulti = false
+	}
 }
 
 // Set Logger Options
@@ -158,6 +175,9 @@ func handleArguments(a *App) {
 		}
 	}
 	if a.CfgVars.ListSounds {
+		if err := a.Config.FindSounds(); err != nil {
+			a.Logger.Log.Error(err)
+		}
 		Fsounds := a.FoundSounds()
 		PrintTableWithAliens(Fsounds)
 		os.Exit(0)

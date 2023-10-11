@@ -17,8 +17,8 @@ type SConfig struct {
 }
 
 type Config struct {
-	Name   string            `json:"name"`
-	KSound map[string]string `json:"defines"`
+	Name    string            `json:"name"`
+	IsMulti bool              `json:"support-event"`
 }
 
 func GetUserSoundDir() (string, error) {
@@ -71,7 +71,7 @@ func (c *SConfig) FindSounds() error {
 			configFile := filepath.Join(path, "config.json")
 			_, err := os.Stat(configFile)
 			if err == nil {
-				// c.AppIn.Logger.Log.Infof("Found Sound! %s", info.Name())
+				c.AppIn.Logger.Log.Debugf("Found Sound! %s", info.Name())
 				c.FSounds[info.Name()] = path
 			}
 		}

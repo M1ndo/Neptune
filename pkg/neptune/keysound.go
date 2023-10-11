@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,14 +20,15 @@ import (
 )
 
 type NewContextPlayer struct {
-	Options   *oto.NewContextOptions
-	Player    *oto.Player
-	Context   *oto.Context
-	readyChan chan struct{}
-	Cache     map[string][]byte
-	mutex     sync.Mutex
-	rwmutex   sync.RWMutex
-	AppIn     *App
+	Options    *oto.NewContextOptions
+	Player     *oto.Player
+	Context    *oto.Context
+	readyChan  chan struct{}
+	Cache      map[string][]byte
+	mutex      sync.Mutex
+	rwmutex    sync.RWMutex
+	keyrelease sync.Map
+	AppIn      *App
 }
 
 // Decode the file.
@@ -57,7 +61,11 @@ func (Ctx *NewContextPlayer) NewContext() error {
 
 // Get Keys
 func GetKeys(key string) *fyne.StaticResource {
-	data := sdata.KeyList[key]
+	data, ok := sdata.KeyList[key]
+	if !ok {
+		key := string(rune(rand.Intn(26)+'a')) + ".wav"
+		return sdata.KeyList[key]
+	}
 	return data
 }
 
@@ -93,21 +101,70 @@ func (Ctx *NewContextPlayer) ClearCache() {
 	}
 }
 
+// Adds file suffix to it.
+func addSuffixToFileName(file string, suffix string) string {
+	ext := filepath.Ext(file)
+	base := strings.TrimSuffix(file, ext)
+	return base + suffix + ext
+}
+
+// Find file or return a fileback
+func FindFileWithFallback(dir, name string, event bool) (string, error) {
+	// Search for files matching the provided name
+	matches, err := filepath.Glob(filepath.Join(dir, name+".*"))
+	if err != nil {
+		return "", err
+	}
+	// If a matching file is found, modify the file name if event is true
+	if len(matches) > 0 {
+		file := matches[0]
+		if event {
+			file = addSuffixToFileName(file, "-up")
+		}
+		return file, nil
+	}
+	// Fallback file names
+	fallbackFiles := map[string]bool{
+		"fallback.wav": true,
+		"fallback.ogg": true,
+	}
+	// Check if the fallback files exist
+	for file := range fallbackFiles {
+		fallbackPath := filepath.Join(dir, file)
+		if _, err := os.Stat(fallbackPath); !os.IsNotExist(err) {
+			if event {
+				fallbackPath = addSuffixToFileName(fallbackPath, "-up")
+			}
+			return fallbackPath, nil
+		}
+	}
+	return "", fmt.Errorf("no matching files found and no fallback files available")
+}
+
 // Play Sounds
 func (Ctx *NewContextPlayer) PlaySound(code string, event bool) error {
 	var f []byte
 	var err error
+	var file string
 	if Ctx.AppIn.Config.DefaultSound != "nk-cream" {
-		file := fmt.Sprintf("%s/%s", Ctx.AppIn.Config.FSounds[Ctx.AppIn.Config.DefaultSound], code)
+		if file, err = FindFileWithFallback(Ctx.AppIn.Config.FSounds[Ctx.AppIn.Config.DefaultSound], code, event); err != nil {
+			return err
+		}
+		Ctx.AppIn.Logger.Log.Debugf("Playing file %s", file)
+		if event {
+			code = code + "-up"
+		}
 		f, err = Ctx.readCache(code, file)
 		if err != nil {
 			return err
 		}
 	} else {
-		f = GetKeys(code).StaticContent
+		file = fmt.Sprintf("%s.wav", code)
+		Ctx.AppIn.Logger.Log.Debugf("Playing Nk-Cream Key %s", file)
+		f = GetKeys(file).StaticContent
 	}
 	fBytes := bytes.NewReader(f)
-	decoded, err := decoder(fBytes, path.Ext(code))
+	decoded, err := decoder(fBytes, path.Ext(file))
 	if err != nil {
 		return err
 	}
