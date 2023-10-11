@@ -109,8 +109,45 @@ func addSuffixToFileName(file string, suffix string) string {
 	return base + suffix + ext
 }
 
+// Check if array contains a string
+func contains(arr []string, val string) bool {
+	for _, item := range arr {
+		if item == val {
+			return true
+		}
+	}
+	return false
+}
+
+// Find fallback files.
+func findFallBackFiles(dir string) ([]string, error) {
+	extensions := []string{".wav", ".ogg"}
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	var fallbackPaths []string
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
+
+		filename := file.Name()
+		ext := filepath.Ext(filename)
+
+		// Check if the file has the correct prefix and extension
+		if strings.HasPrefix(filename, "fallback") && contains(extensions, ext) {
+			fallbackPath := filepath.Join(dir, filename)
+			fallbackPaths = append(fallbackPaths, fallbackPath)
+		}
+	}
+
+	return fallbackPaths, nil
+}
+
 // Find file or return a fileback
-func FindFileWithFallback(dir, name string, event bool) (string, error) {
+func (Ctx *NewContextPlayer) FindFileWithFallback(dir, name string, event bool) (string, error) {
 	// Search for files matching the provided name
 	matches, err := filepath.Glob(filepath.Join(dir, name+".*"))
 	if err != nil {
@@ -125,21 +162,16 @@ func FindFileWithFallback(dir, name string, event bool) (string, error) {
 		return file, nil
 	}
 	// Fallback file names
-	fallbackFiles := map[string]bool{
-		"fallback.wav": true,
-		"fallback.ogg": true,
+	fallbackFiles, err := findFallBackFiles(dir)
+	if err != nil {
+		return "", fmt.Errorf("no matching files found and no fallback files available")
 	}
-	// Check if the fallback files exist
-	for file := range fallbackFiles {
-		fallbackPath := filepath.Join(dir, file)
-		if _, err := os.Stat(fallbackPath); !os.IsNotExist(err) {
-			if event {
-				fallbackPath = addSuffixToFileName(fallbackPath, "-up")
-			}
-			return fallbackPath, nil
-		}
+	rIndex := rand.Intn(len(fallbackFiles))
+	randomFile := fallbackFiles[rIndex]
+	if event {
+		randomFile = addSuffixToFileName(randomFile, "-up")
 	}
-	return "", fmt.Errorf("no matching files found and no fallback files available")
+	return randomFile, nil
 }
 
 // Play Sounds
@@ -148,7 +180,7 @@ func (Ctx *NewContextPlayer) PlaySound(code string, event bool) error {
 	var err error
 	var file string
 	if Ctx.AppIn.Config.DefaultSound != "nk-cream" {
-		if file, err = FindFileWithFallback(Ctx.AppIn.Config.FSounds[Ctx.AppIn.Config.DefaultSound], code, event); err != nil {
+		if file, err = Ctx.FindFileWithFallback(Ctx.AppIn.Config.FSounds[Ctx.AppIn.Config.DefaultSound], code, event); err != nil {
 			return err
 		}
 		Ctx.AppIn.Logger.Log.Debugf("Playing file %s", file)
