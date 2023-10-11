@@ -18,7 +18,7 @@ type SConfig struct {
 
 type Config struct {
 	Name    string            `json:"name"`
-	IsMulti bool              `json:"support-event"`
+	IsMulti bool              `json:"support-events"`
 }
 
 func GetUserSoundDir() (string, error) {

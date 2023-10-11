@@ -10,6 +10,7 @@ type SelectVars struct {
 	Sounddir   string
 	Download   bool
 	ListSounds bool
+	Volume     float64
 	Verbose    bool
 }
 
@@ -21,6 +22,7 @@ func ParseFlags() *SelectVars {
 	flag.StringVar(&cfgVars.Sounddir, "sounddir", soundDir, "Sounds directory")
 	flag.BoolVar(&cfgVars.Download, "download", false, "Download all other soundkeys")
 	flag.BoolVar(&cfgVars.ListSounds, "lst", false, "List all available sounds")
+	flag.Float64Var(&cfgVars.Volume, "volume", 1, "Set volume (0 to 1)")
 	flag.BoolVar(&cfgVars.Verbose, "verbose", false, "Verbose output (Debugging)")
 	flag.Parse()
 	return cfgVars

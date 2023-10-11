@@ -28,6 +28,7 @@ type NewContextPlayer struct {
 	mutex      sync.Mutex
 	rwmutex    sync.RWMutex
 	keyrelease sync.Map
+	volume     float64
 	AppIn      *App
 }
 
@@ -170,6 +171,7 @@ func (Ctx *NewContextPlayer) PlaySound(code string, event bool) error {
 	}
 	<-Ctx.readyChan
 	Ctx.Player = Ctx.Context.NewPlayer(decoded)
+	Ctx.Player.SetVolume(Ctx.volume)
 	go func() {
 		Ctx.Player.Play()
 		for Ctx.Player.IsPlaying() {

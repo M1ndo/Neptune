@@ -182,6 +182,9 @@ func handleArguments(a *App) {
 		PrintTableWithAliens(Fsounds)
 		os.Exit(0)
 	}
+	if a.CfgVars.Volume != 0 {
+		a.ContextPlayer.volume = a.CfgVars.Volume
+	}
 	if a.CfgVars.Verbose {
 		a.Logger.Log.SetLevel(loggdb.Debug)
 	}
