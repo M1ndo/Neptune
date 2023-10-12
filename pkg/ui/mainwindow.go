@@ -10,15 +10,17 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
+
 	// xwidget "fyne.io/x/fyne/widget"
 	"github.com/getlantern/systray"
 )
 
 type UiApp struct {
+	AppIn NeptuneInterface
 	MainWindow fyne.Window
 }
 
-func (ui *UiApp) NewApp(SoundL fyne.CanvasObject, start func(), stop func()) error {
+func (ui *UiApp) NewApp(SoundL fyne.CanvasObject) error {
 	app := app.NewWithID("cf.ybenel.Neptune")
 	app.Settings().SetTheme(&myTheme{})
 	app.SetIcon(IconRes)
@@ -61,14 +63,14 @@ func (ui *UiApp) NewApp(SoundL fyne.CanvasObject, start func(), stop func()) err
 			Alignment:  widget.ButtonAlignCenter,
 			Importance: widget.HighImportance,
 			OnTapped: func() {
-				go start()
+				go ui.AppIn.AppRun()
 			},
 		},
 		&widget.Button{
 			Text:       "Stop",
 			Alignment:  widget.ButtonAlignCenter,
 			Importance: widget.WarningImportance,
-			OnTapped:   stop,
+			OnTapped:   ui.AppIn.AppStop,
 		},
 	)
 
@@ -104,8 +106,8 @@ func (ui *UiApp) NewApp(SoundL fyne.CanvasObject, start func(), stop func()) err
 	return nil
 }
 
-func (Ui *UiApp) SoundsList(SoundList []string, f func(string)) fyne.CanvasObject {
-	AvailableSounds := widget.NewSelect(SoundList, f)
+func (Ui *UiApp) SoundsList() fyne.CanvasObject {
+	AvailableSounds := widget.NewSelect(Ui.AppIn.FoundSounds(), Ui.AppIn.SetSounds)
 	AvailableSounds.Selected = "nk-cream"
 	return AvailableSounds
 }
@@ -128,16 +130,26 @@ func (ui *UiApp) SystrayRun() {
 // onReady() For systray
 func (ui *UiApp) OnReady() {
 	systray.SetTemplateIcon(IconRes.Content(), IconRes.Content())
+	systray.SetIcon(IconRes.Content())
 	systray.SetTitle("Neptune")
 	systray.SetTooltip("Neptune")
 	systray.AddSeparator()
 	mShow := systray.AddMenuItem("Show", "Show the main app")
+	mStart := systray.AddMenuItem("Start", "Start the soundkeys")
+	mPause := systray.AddMenuItem("Stop", "Stop the soundkeys")
+	mRand := systray.AddMenuItem("Rand", "Use a random soundkey")
 	mQuitOrig := systray.AddMenuItem("Quit", "Quit the whole app")
 	go func() {
 		for {
 			select {
 			case <-mShow.ClickedCh:
 				ui.MainWindow.Show()
+			case <-mStart.ClickedCh:
+				ui.AppIn.AppRun()
+			case <-mPause.ClickedCh:
+				ui.AppIn.AppStop()
+			case <-mRand.ClickedCh:
+				ui.AppIn.AppRand()
 			case <-mQuitOrig.ClickedCh:
 				ui.MainWindow.Close()
 				systray.Quit()

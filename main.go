@@ -8,9 +8,9 @@ import (
 func main() {
 	App := neptune.NewApp()
 	if !App.CfgVars.Cli {
-		uiApp := &ui.UiApp{}
-		SoundWid := uiApp.SoundsList(App.FoundSounds(), App.SetSounds)
-		err := uiApp.NewApp(SoundWid, App.AppRun, App.AppStop)
+		uiApp := &ui.UiApp{AppIn: App}
+		SoundWid := uiApp.SoundsList()
+		err := uiApp.NewApp(SoundWid)
 		if err != nil {
 			App.Logger.Log.Fatal(err)
 		}

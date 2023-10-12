@@ -16,6 +16,7 @@ func (App *Sys) Init() {
 func (App *Sys) onReady() {
 	go App.AppRun()
 	systray.SetTemplateIcon(ui.IconRes.Content(), ui.IconRes.Content())
+	systray.SetIcon(ui.IconRes.Content())
 	systray.SetTitle("Neptune")
 	systray.SetTooltip("Neptune")
 	systray.AddSeparator()
