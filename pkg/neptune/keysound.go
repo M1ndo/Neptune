@@ -137,7 +137,7 @@ func findFallBackFiles(dir string) ([]string, error) {
 		ext := filepath.Ext(filename)
 
 		// Check if the file has the correct prefix and extension
-		if strings.HasPrefix(filename, "fallback") && contains(extensions, ext) {
+		if strings.HasPrefix(filename, "fallback") && contains(extensions, ext) && !strings.Contains(filename, "-up") {
 			fallbackPath := filepath.Join(dir, filename)
 			fallbackPaths = append(fallbackPaths, fallbackPath)
 		}
