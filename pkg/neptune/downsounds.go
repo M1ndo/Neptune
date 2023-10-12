@@ -37,22 +37,30 @@ var sounds = []string{
 	"boxnavy.tar.xz",
 	"bluealps.tar.xz",
 	"topre.tar.xz",
+	"typewriter.tar.xz",
+	"osu.tar.xz",
+	"cherrymxblue.tar.xz",
+	"buckling.tar.xz",
 }
 
 var soundsInfo = map[string]string{
-	"nkcream2.tar.xz":  "Nk Cream (By Kbs.Im)",
-	"nkcream3.tar.xz":  "Nk Cream (By MonkeyType)",
-	"alpacas.tar.xz":   "Alpacas",
-	"holypanda.tar.xz": "Holy Panda",
-	"torquoius.tar.xz": "Turquoise Tealios",
-	"blackink.tar.xz":  "Gateron Black Inks",
-	"redink.tar.xz":    "Gateron Red Inks",
-	"mxblack.tar.xz":   "Cherry MX Blacks",
-	"mxbrown.tar.xz":   "Cherry MX Browns",
-	"mxblue.tar.xz":    "Cherry MX Blues",
-	"boxnavy.tar.xz":   "Kailh Box Navies",
-	"bluealps.tar.xz":  "SKCM Blue Alps",
-	"topre.tar.xz":     "Topre",
+	"nkcream2.tar.xz":     "Nk Cream 2",
+	"nkcream3.tar.xz":     "Nk Cream 3",
+	"alpacas.tar.xz":      "Alpacas",
+	"holypanda.tar.xz":    "Holy Panda",
+	"torquoius.tar.xz":    "Turquoise Tealios",
+	"blackink.tar.xz":     "Gateron Black Inks",
+	"redink.tar.xz":       "Gateron Red Inks",
+	"mxblack.tar.xz":      "Cherry MX Blacks",
+	"mxbrown.tar.xz":      "Cherry MX Browns",
+	"mxblue.tar.xz":       "Cherry MX Blues",
+	"boxnavy.tar.xz":      "Kailh Box Navies",
+	"bluealps.tar.xz":     "SKCM Blue Alps",
+	"topre.tar.xz":        "Topre",
+	"typewriter.tar.xz":   "TypeWriter",
+	"osu.tar.xz":          "Osu",
+	"cherrymxblue.tar.xz": "Cherry Mx Blue",
+	"buckling.tar.xz":     "Buckling Spring",
 }
 
 var outdir, _ = GetUserSoundDir()
@@ -94,7 +102,6 @@ func getResponse(url string) (*http.Response, error) {
 	}
 	return resp, nil
 }
-
 
 // Download files concurrently.
 func downloadSounds(p *tea.Program) chan error {
@@ -222,6 +229,8 @@ func waitForDownloadCompletion(filename, outdir, outfile string, total_length in
 }
 
 func decompressTarXZ(srcPath, destPath string) error {
+	// Create destination folder.
+	_ = os.Mkdir(destPath, os.ModePerm)
 	srcFile, err := os.Open(srcPath)
 	if err != nil {
 		return fmt.Errorf("failed to open source file: %w", err)

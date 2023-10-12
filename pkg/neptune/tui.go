@@ -111,7 +111,7 @@ func PrintTableWithAliens(list []string) {
 	colors := generateRandomColors(len(list))
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
-	t.SetTitle(lipgloss.NewStyle().Foreground(lipgloss.Color("#FF00FF")).Render("Available Sounds Keys"))
+	t.SetTitle(lipgloss.NewStyle().Foreground(lipgloss.Color("#FF00FF")).Render("Available Sound Keys"))
 	for i, str := range list {
 		row := table.Row{alien+lipgloss.NewStyle().Foreground(lipgloss.Color(colors[i])).Render(str)}
 		t.AppendRow(row)
