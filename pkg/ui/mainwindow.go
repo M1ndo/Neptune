@@ -3,6 +3,8 @@ package ui
 import (
 	"image/color"
 	"net/url"
+	"os"
+	"os/exec"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -16,11 +18,14 @@ import (
 )
 
 type UiApp struct {
-	AppIn NeptuneInterface
+	AppIn      NeptuneInterface
 	MainWindow fyne.Window
+	App        fyne.App
+	SoundL     *widget.Select
+	NotifMsg   *fyne.Notification
 }
 
-func (ui *UiApp) NewApp(SoundL fyne.CanvasObject) error {
+func (ui *UiApp) NewApp() error {
 	app := app.NewWithID("cf.ybenel.Neptune")
 	app.Settings().SetTheme(&myTheme{})
 	app.SetIcon(IconRes)
@@ -28,7 +33,7 @@ func (ui *UiApp) NewApp(SoundL fyne.CanvasObject) error {
 	w.Resize(fyne.NewSize(460, 400))
 	w.SetFixedSize(true)
 	w.CenterOnScreen()
-	w.SetCloseIntercept(func() {w.Hide()})
+	w.SetCloseIntercept(func() { w.Hide() })
 	// Create a box container
 	// box := container.NewVBox()
 	box := container.New(layout.NewVBoxLayout())
@@ -80,36 +85,56 @@ func (ui *UiApp) NewApp(SoundL fyne.CanvasObject) error {
 		widget.NewLabel("-"),
 		widget.NewHyperlink("How To", parseURL("https://github.com/m1ndo/Neptune")),
 		widget.NewLabel("-"),
-		widget.NewHyperlink("Donate", parseURL("https://ybenel.cf/donate")),
+		widget.NewHyperlink("Donate", parseURL("https://ybenel.cf/DonateToNeptune")),
 	)
 
 	// Create a spacer to push the buttons down
 	buttonsSpacer := container.NewVBox(widget.NewLabel(""))
 	buttonsSpacer.Resize(fyne.NewSize(10, 800))
+	// List available sounds
+	ui.SoundL = widget.NewSelect(ui.AppIn.FoundSounds(), ui.AppIn.SetSounds)
+	ui.SoundL.Selected = "nk-cream"
+
+	// Show a notification that a download process is happening
+	if !ui.AppIn.Checklock() {
+		app.SendNotification(&fyne.Notification{
+			Title:   "Neptune",
+			Content: "Downloading/Installing Sounds, Please Wait!",
+		})
+	}
+	// Start a goroutine to perform the download
+	go func() {
+		// Signal the download completion
+		if ui.DownloadSounds() {
+			app.SendNotification(ui.NotifMsg)
+			app.SendNotification(&fyne.Notification{Title: "Neptune", Content: "Restarting The App ..."})
+			ui.RestartApp()
+		}
+		app.SendNotification(ui.NotifMsg)
+	}()
 
 	// Add Widgets
 	box.Add(title)
 	// box.Add(Slogo)
 	box.Add(logo)
-	box.Add(SoundL)
+	box.Add(ui.SoundL)
 	box.Add(buttonsSpacer)
 	box.Add(StartStop)
-	// box.Add(buttonsSpacer)
-	// box.Add(buttonsSpacer)
 	box.Add(nAuthText)
-	// box.Add(buttonsSpacer)
-	// box.Add(buttonsSpacer)
 	box.Add(container.NewCenter(NLinks))
 	// Slogo.Start()
 	w.SetContent(box)
 	ui.MainWindow = w
+	ui.App = app
 	return nil
 }
 
-func (Ui *UiApp) SoundsList() fyne.CanvasObject {
-	AvailableSounds := widget.NewSelect(Ui.AppIn.FoundSounds(), Ui.AppIn.SetSounds)
-	AvailableSounds.Selected = "nk-cream"
-	return AvailableSounds
+// RestartApp
+func (ui *UiApp) RestartApp() {
+	executablePath, _:= os.Executable()
+	cmd := exec.Command(executablePath)
+	cmd.Start()
+	os.Exit(0)
 }
 
 // Parse and url
@@ -118,8 +143,18 @@ func parseURL(urlStr string) *url.URL {
 	if err != nil {
 		fyne.LogError("Could not parse URL", err)
 	}
-
 	return link
+}
+
+// Download Missing Sounds
+func (ui *UiApp) DownloadSounds() bool {
+	if nmsg, _ := ui.AppIn.DownloadSounds(); nmsg == "All sounds already installed" {
+		ui.NotifMsg = fyne.NewNotification("Neptune", "All sounds are available")
+		return false
+	} else {
+		ui.NotifMsg = fyne.NewNotification("Neptune", "App requires a restart")
+		return true
+	}
 }
 
 // Register systray

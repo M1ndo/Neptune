@@ -6,4 +6,6 @@ type NeptuneInterface interface {
 	AppRand()
 	SetSounds(string)
 	FoundSounds() []string
+	DownloadSounds() (string, chan error)
+	Checklock() bool
 }

@@ -9,8 +9,7 @@ func main() {
 	App := neptune.NewApp()
 	if !App.CfgVars.Cli {
 		uiApp := &ui.UiApp{AppIn: App}
-		SoundWid := uiApp.SoundsList()
-		err := uiApp.NewApp(SoundWid)
+		err := uiApp.NewApp()
 		if err != nil {
 			App.Logger.Log.Fatal(err)
 		}

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
 	"time"
@@ -274,15 +275,29 @@ func decompressTarXZ(srcPath, destPath string) error {
 	return nil
 }
 
+// Check if errors chan is empty
+func isChannelEmpty(ch <-chan error) bool {
+	select {
+	case <-ch:
+		return false // Channel is not empty
+	default:
+		return true // Channel is empty
+	}
+}
+
+// Download sounds
 func DownloadSounds() (string, chan error) {
+	if checkLock() {
+		return "All sounds already installed", nil
+	}
 	p := tea.NewProgram(model{})
 	err := downloadSounds(p)
-	if err != nil {
-		return "", err
+	if isChannelEmpty(err) {
+		createLock()
+		msg := fmt.Sprintf("Done! Installed %d sounds.\n", len(sounds))
+		return msg, nil
 	}
-	msg := fmt.Sprintf("Done! Installed %d sounds.\n", len(sounds))
-	fmt.Println(doneStyle.Render(msg))
-	return msg, nil
+	return "", err
 }
 
 // Delete after decompression
@@ -292,6 +307,20 @@ func deleteFile(path string) error {
 		return fmt.Errorf("failed to delete file: %w", err)
 	}
 	return nil
+}
+
+// Create a download lock file .
+func createLock() {
+	if _, err := os.Create(path.Join(outdir, "install.lock")); err != nil {
+		return
+	}
+}
+
+func checkLock() bool {
+	if _, err := os.Stat(path.Join(outdir, "install.lock")); err == nil {
+		return true
+	}
+	return false
 }
 
 // Check if files are downloaded

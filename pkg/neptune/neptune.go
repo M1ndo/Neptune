@@ -163,15 +163,31 @@ func (a *App) AppRand() {
 	a.SetSounds(randSound)
 }
 
+// Download Sounds
+func (a *App) DownloadSounds() (string, chan error){
+	msg, err := DownloadSounds()
+	return msg, err
+}
+
+// Download Sounds
+func (a *App) Checklock() bool {
+	return checkLock()
+}
+
 // Handle arguments
 func handleArguments(a *App) {
 	if a.CfgVars.Soundkey != "" {
 		a.Config.DefaultSound = a.CfgVars.Soundkey
 	}
 	if a.CfgVars.Download {
-		_, errCh := DownloadSounds()
-		for err := range errCh {
-			a.Logger.Log.Error(err)
+		msg, errCh := DownloadSounds()
+		if errCh != nil {
+			for err := range errCh {
+				a.Logger.Log.Error(err)
+			}
+		}
+		if msg != "" {
+			a.Logger.Log.Info(msg)
 		}
 	}
 	if a.CfgVars.ListSounds {
