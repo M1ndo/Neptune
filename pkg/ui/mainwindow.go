@@ -131,7 +131,7 @@ func (ui *UiApp) NewApp() error {
 
 // RestartApp
 func (ui *UiApp) RestartApp() {
-	executablePath, _:= os.Executable()
+	executablePath, _ := os.Executable()
 	cmd := exec.Command(executablePath)
 	cmd.Start()
 	os.Exit(0)
