@@ -29,7 +29,7 @@ func NewApp() *App {
 		Sys:           &Sys{},
 	}
 	// Set Logger
-	a.Logger = setLogger()
+	a.Logger = a.SetLogger()
 	// Cli args
 	a.CfgVars = ParseFlags()
 	a.Config.SoundDir = a.CfgVars.Sounddir
@@ -143,7 +143,7 @@ func (a *App) SetSounds(sound string) {
 }
 
 // Set Logger Options
-func setLogger() *loggdb.Logger {
+func (a *App) SetLogger() *loggdb.Logger {
 	dir, _ := GetUserSoundDir()
 	NewLogger := &loggdb.Logger{}
 	NewLogger.LogDir = dir + "/log"
@@ -165,7 +165,7 @@ func (a *App) AppRand() {
 
 // Download Sounds
 func (a *App) DownloadSounds() (string, chan error){
-	msg, err := DownloadSounds()
+	msg, err := DownloadSounds(false)
 	return msg, err
 }
 
@@ -180,7 +180,7 @@ func handleArguments(a *App) {
 		a.Config.DefaultSound = a.CfgVars.Soundkey
 	}
 	if a.CfgVars.Download {
-		msg, errCh := DownloadSounds()
+		msg, errCh := DownloadSounds(true)
 		if errCh != nil {
 			for err := range errCh {
 				a.Logger.Log.Error(err)
