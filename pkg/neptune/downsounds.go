@@ -1,8 +1,7 @@
 package neptune
 
 import (
-	"archive/tar"
-	"bufio"
+	"archive/zip"
 	"fmt"
 	"io"
 	"log"
@@ -11,13 +10,12 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
-	"time"
+	"sync/atomic"
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/ulikunitz/xz"
 )
 
 const (
@@ -25,47 +23,51 @@ const (
 )
 
 var sounds = []string{
-	"nkcream2.tar.xz",
-	"nkcream3.tar.xz",
-	"alpacas.tar.xz",
-	"holypanda.tar.xz",
-	"torquoius.tar.xz",
-	"blackink.tar.xz",
-	"redink.tar.xz",
-	"mxblack.tar.xz",
-	"mxbrown.tar.xz",
-	"mxblue.tar.xz",
-	"boxnavy.tar.xz",
-	"bluealps.tar.xz",
-	"topre.tar.xz",
-	"typewriter.tar.xz",
-	"osu.tar.xz",
-	"cherrymxblue.tar.xz",
-	"buckling.tar.xz",
+	"nkcream2.zip",
+	"nkcream3.zip",
+	"alpacas.zip",
+	"holypanda.zip",
+	"turquoise.zip",
+	"blackink.zip",
+	"redink.zip",
+	"mxblack.zip",
+	"mxbrown.zip",
+	"mxblue.zip",
+	"boxnavy.zip",
+	"bluealps.zip",
+	"topre.zip",
+	"typewriter.zip",
+	"osu.zip",
+	"cherrymxblue.zip",
+	"buckling.zip",
 }
 
 var soundsInfo = map[string]string{
-	"nkcream2.tar.xz":     "Nk Cream 2",
-	"nkcream3.tar.xz":     "Nk Cream 3",
-	"alpacas.tar.xz":      "Alpacas",
-	"holypanda.tar.xz":    "Holy Panda",
-	"torquoius.tar.xz":    "Turquoise Tealios",
-	"blackink.tar.xz":     "Gateron Black Inks",
-	"redink.tar.xz":       "Gateron Red Inks",
-	"mxblack.tar.xz":      "Cherry MX Blacks",
-	"mxbrown.tar.xz":      "Cherry MX Browns",
-	"mxblue.tar.xz":       "Cherry MX Blues",
-	"boxnavy.tar.xz":      "Kailh Box Navies",
-	"bluealps.tar.xz":     "SKCM Blue Alps",
-	"topre.tar.xz":        "Topre",
-	"typewriter.tar.xz":   "TypeWriter",
-	"osu.tar.xz":          "Osu",
-	"cherrymxblue.tar.xz": "Cherry Mx Blue",
-	"buckling.tar.xz":     "Buckling Spring",
+	"nkcream2.zip":     "Nk Cream 2",
+	"nkcream3.zip":     "Nk Cream 3",
+	"alpacas.zip":      "Alpacas",
+	"holypanda.zip":    "Holy Panda",
+	"turquoise.zip":    "Turquoise Tealios",
+	"blackink.zip":     "Gateron Black Inks",
+	"redink.zip":       "Gateron Red Inks",
+	"mxblack.zip":      "Cherry MX Blacks",
+	"mxbrown.zip":      "Cherry MX Browns",
+	"mxblue.zip":       "Cherry MX Blues",
+	"boxnavy.zip":      "Kailh Box Navies",
+	"bluealps.zip":     "SKCM Blue Alps",
+	"topre.zip":        "Topre",
+	"typewriter.zip":   "TypeWriter",
+	"osu.zip":          "Osu",
+	"cherrymxblue.zip": "Cherry Mx Blue",
+	"buckling.zip":     "Buckling Spring",
 }
 
-var outdir, _ = GetUserSoundDir()
-var Xindex int
+var (
+	outdir, _ = GetUserSoundDir()
+	Xindex uint64
+  p *tea.Program = tea.NewProgram(model{})
+	wg sync.WaitGroup
+)
 
 type progressWriter struct {
 	total      int
@@ -104,39 +106,75 @@ func getResponse(url string) (*http.Response, error) {
 	return resp, nil
 }
 
-// Download files concurrently.
-func downloadSounds(p *tea.Program) chan error {
-	errCh := make(chan error, len(sounds))
-	successCh := make(chan struct{}, len(sounds))
-	var wg sync.WaitGroup
-	var mu sync.Mutex
+// Function to unzip a file
+func unzipFile(zipFile string) error {
+	reader, err := zip.OpenReader(zipFile)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	for _, file := range reader.File {
+		err := extractFile(filepath.Base(zipFile), file)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
+// Function to extract a file from the zip archive
+func extractFile(zipname string, file *zip.File) error {
+	destDir :=  filepath.Join(outdir, soundsInfo[zipname])
+	_ = os.Mkdir(destDir, os.ModePerm)
+	dstPath := filepath.Join(destDir, file.Name)
+	if file.FileInfo().IsDir() {
+		os.MkdirAll(dstPath, file.Mode())
+	} else {
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+		dst, err := os.Create(dstPath)
+		if err != nil {
+			return err
+		}
+		defer dst.Close()
+		_, err = io.Copy(dst, src)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// Increment xIndex
+func xInc() {
+	atomic.AddUint64(&Xindex, 1)
+}
+
+// Download files concurrently.
+func downloadSounds(cli bool) chan error {
+	errCh := make(chan error, len(sounds))
 	for _, url := range sounds {
 		fullURL := BaseURL + url
 		down, err := checkDown(soundsInfo[url])
 		if !down {
-			// fmt.Println(fmt.Sprintf("Soundkey %s already exists!", soundsInfo[url]))
-			mu.Lock()
-			Xindex++
-			mu.Unlock()
+			xInc()
 			continue
 		}
 
 		resp, err := getResponse(fullURL)
 		if err != nil {
 			errCh <- fmt.Errorf("could not get response for %s: %w", fullURL, err)
-			mu.Lock()
-			Xindex++
-			mu.Unlock()
+			xInc()
 			continue
 		}
 		defer resp.Body.Close()
 
 		if resp.ContentLength <= 0 {
 			errCh <- fmt.Errorf("can't parse content length for %s, aborting download", fullURL)
-			mu.Lock()
-			Xindex++
-			mu.Unlock()
+			xInc()
 			continue
 		}
 
@@ -144,135 +182,71 @@ func downloadSounds(p *tea.Program) chan error {
 		file, err := os.Create(filename)
 		if err != nil {
 			errCh <- fmt.Errorf("could not create file %s: %w", filename, err)
-			mu.Lock()
-			Xindex++
-			mu.Unlock()
+			xInc()
 			continue
 		}
 		defer file.Close()
+		if cli {
+			pw := &progressWriter{
+				total:  int(resp.ContentLength),
+				file:   file,
+				reader: resp.Body,
+				onProgress: func(ratio float64) {
+					p.Send(progressMsg(ratio))
+				},
+			}
 
-		pw := &progressWriter{
-			total:  int(resp.ContentLength),
-			file:   file,
-			reader: resp.Body,
-			onProgress: func(ratio float64) {
-				p.Send(progressMsg(ratio))
-			},
-		}
-
-		pro := progress.New(
-			progress.WithDefaultGradient(),
-			progress.WithWidth(40),
-		)
-		s := spinner.New()
-		s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
-		m := model{
-			pw:       pw,
-			s:        s,
-			progress: pro,
-		}
-		p = tea.NewProgram(m)
-		go pw.Start()
-		if _, err := p.Run(); err != nil {
-			errCh <- fmt.Errorf("error running program: %w", err)
-			mu.Lock()
-			Xindex++
-			mu.Unlock()
-			continue
-		}
-
-		mu.Lock()
-		Xindex++
-		wg.Add(1)
-		go func(url, filename string) {
-			defer wg.Done()
-			err := waitForDownloadCompletion(filename, outdir, soundsInfo[url], resp.ContentLength)
+			pro := progress.New(
+				progress.WithDefaultGradient(),
+				progress.WithWidth(40),
+			)
+			s := spinner.New()
+			s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("63"))
+			m := model{
+				pw:       pw,
+				s:        s,
+				progress: pro,
+			}
+			p = tea.NewProgram(m)
+			go pw.Start()
+			if _, err := p.Run(); err != nil {
+				errCh <- fmt.Errorf("error running program: %w", err)
+				xInc()
+				continue
+			}
+		} else {
+			_, err = io.Copy(file, resp.Body)
 			if err != nil {
-				errCh <- fmt.Errorf("failed to wait for download completion: %w", err)
+				xInc()
+				errCh	<- err
+				continue
+			}
+		}
+		xInc()
+		wg.Add(1)
+		go func(filename string) {
+			defer wg.Done()
+
+			err = unzipFile(filename)
+			if err != nil {
+				errCh <- fmt.Errorf("failed to unzip file: %v", err)
+				xInc()
 				return
 			}
-			successCh <- struct{}{}
-		}(url, filename)
-		mu.Unlock()
+			err = deleteFile(filename)
+			if err != nil {
+				xInc()
+				errCh <- fmt.Errorf("failed to delete file: %w", err)
+				return
+			}
+		}(filename)
 	}
 
 	go func() {
 		wg.Wait()
 		close(errCh)
-		close(successCh)
 	}()
 	return errCh
-}
-
-// Wait for dwonload to finish then decompresss
-func waitForDownloadCompletion(filename, outdir, outfile string, total_length int64) error {
-	for {
-		fi, err := os.Stat(filename)
-		if err != nil {
-			return fmt.Errorf("failed to get file info: %w", err)
-		}
-		if fi.Size() == total_length {
-			// fmt.Printf("File Size %d, Total Length %d\r\n", fi.Size(), total_length)
-			destPath := filepath.Join(outdir, outfile)
-			err = decompressTarXZ(filename, destPath)
-			if err != nil {
-				return err
-			}
-			if err = deleteFile(filename); err != nil {
-				return err
-			}
-			break
-		}
-		time.Sleep(time.Second)
-		continue
-	}
-	return nil
-}
-
-func decompressTarXZ(srcPath, destPath string) error {
-	// Create destination folder.
-	_ = os.Mkdir(destPath, os.ModePerm)
-	srcFile, err := os.Open(srcPath)
-	if err != nil {
-		return fmt.Errorf("failed to open source file: %w", err)
-	}
-	defer srcFile.Close()
-	srcReader := bufio.NewReader(srcFile)
-	xzReader, err := xz.NewReader(srcReader)
-	if err != nil {
-		return fmt.Errorf("failed to create XZ reader: %w", err)
-	}
-	tarReader := tar.NewReader(xzReader)
-
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("failed to read TAR header: %w", err)
-		}
-		destFilePath := filepath.Join(destPath, header.Name)
-		if header.Typeflag == tar.TypeDir {
-			err := os.MkdirAll(destFilePath, os.ModePerm)
-			if err != nil {
-				return fmt.Errorf("failed to create directory: %w", err)
-			}
-			continue
-		}
-
-		destFile, err := os.Create(destFilePath)
-		if err != nil {
-			return fmt.Errorf("failed to create destination file: %w", err)
-		}
-		defer destFile.Close()
-		_, err = io.Copy(destFile, tarReader)
-		if err != nil {
-			return fmt.Errorf("failed to copy file contents: %w", err)
-		}
-	}
-
-	return nil
 }
 
 // Check if errors chan is empty
@@ -286,16 +260,15 @@ func isChannelEmpty(ch <-chan error) bool {
 }
 
 // Download sounds
-func DownloadSounds() (string, chan error) {
+func DownloadSounds(cli bool) (string, chan error) {
 	if checkLock() {
 		return "All sounds already installed", nil
 	}
-	p := tea.NewProgram(model{})
-	err := downloadSounds(p)
+	err := downloadSounds(cli)
 	if isChannelEmpty(err) {
 		createLock()
 		msg := fmt.Sprintf("Done! Installed %d sounds.\n", len(sounds))
-		return msg, nil
+		return msg, err
 	}
 	return "", err
 }
@@ -316,24 +289,21 @@ func createLock() {
 	}
 }
 
+// Check if lock exists
 func checkLock() bool {
-	if _, err := os.Stat(path.Join(outdir, "install.lock")); err == nil {
-		return true
-	}
-	return false
+	_, err := os.Stat(filepath.Join(outdir, "install.lock"))
+	return err == nil
 }
 
-// Check if files are downloaded
+// Check if file exists
 func checkDown(name string) (bool, error) {
 	dirPath := filepath.Join(outdir, name)
-
 	_, err := os.Stat(dirPath)
 	if err == nil {
 		return false, nil
 	}
-	if !os.IsNotExist(err) {
-		return true, fmt.Errorf("failed to check directory existence: %w", err)
+	if os.IsNotExist(err) {
+		return true, nil
 	}
-
-	return true, nil
+	return true, fmt.Errorf("failed to check existence of directory %s: %w", dirPath, err)
 }
