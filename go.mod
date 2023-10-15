@@ -13,7 +13,6 @@ require (
 	github.com/jedib0t/go-pretty/v6 v6.4.8
 	github.com/m1ndo/LogGdb v1.0.1-0.20231006171015-62f7cce9bcc1
 	github.com/robotn/gohook v0.41.0
-	github.com/ulikunitz/xz v0.5.11
 )
 
 require (
