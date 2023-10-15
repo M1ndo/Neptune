@@ -17,15 +17,9 @@ import (
 	"github.com/getlantern/systray"
 )
 
-type UiApp struct {
-	AppIn      NeptuneInterface
-	MainWindow fyne.Window
-	App        fyne.App
-	SoundL     *widget.Select
-	NotifMsg   *fyne.Notification
-}
-
 func (ui *UiApp) NewApp() error {
+	// Logger
+	ui.Logger = ui.AppIn.SetLogger()
 	app := app.NewWithID("cf.ybenel.Neptune")
 	app.Settings().SetTheme(&myTheme{})
 	app.SetIcon(IconRes)
@@ -101,18 +95,17 @@ func (ui *UiApp) NewApp() error {
 			Title:   "Neptune",
 			Content: "Downloading/Installing Sounds, Please Wait!",
 		})
-	}
-	// Start a goroutine to perform the download
-	go func() {
-		// Signal the download completion
-		if ui.DownloadSounds() {
+		// Start a goroutine to perform the download
+		go func() {
+			// Signal the download completion
+			if ui.DownloadSounds() {
+				app.SendNotification(ui.NotifMsg)
+				app.SendNotification(&fyne.Notification{Title: "Neptune", Content: "Restarting The App ..."})
+				ui.RestartApp()
+			}
 			app.SendNotification(ui.NotifMsg)
-			app.SendNotification(&fyne.Notification{Title: "Neptune", Content: "Restarting The App ..."})
-			ui.RestartApp()
-		}
-		app.SendNotification(ui.NotifMsg)
-	}()
-
+		}()
+	}
 	// Add Widgets
 	box.Add(title)
 	// box.Add(Slogo)
@@ -148,13 +141,19 @@ func parseURL(urlStr string) *url.URL {
 
 // Download Missing Sounds
 func (ui *UiApp) DownloadSounds() bool {
-	if nmsg, _ := ui.AppIn.DownloadSounds(); nmsg == "All sounds already installed" {
-		ui.NotifMsg = fyne.NewNotification("Neptune", "All sounds are available")
-		return false
-	} else {
+	var err chan error
+	if nmsg, err := ui.AppIn.DownloadSounds(); nmsg != "All sounds already installed" {
 		ui.NotifMsg = fyne.NewNotification("Neptune", "App requires a restart")
+		for ers := range err {
+			ui.Logger.Log.Error(ers)
+		}
 		return true
 	}
+	for ers := range err {
+		ui.Logger.Log.Error(ers)
+	}
+	ui.NotifMsg = fyne.NewNotification("Neptune", "All sounds are available")
+	return false
 }
 
 // Register systray
@@ -164,8 +163,8 @@ func (ui *UiApp) SystrayRun() {
 
 // onReady() For systray
 func (ui *UiApp) OnReady() {
-	systray.SetTemplateIcon(IconRes.Content(), IconRes.Content())
-	systray.SetIcon(IconRes.Content())
+	systray.SetTemplateIcon(IcoRes.Content(), IcoRes.Content())
+	systray.SetIcon(icoRes.Content())
 	systray.SetTitle("Neptune")
 	systray.SetTooltip("Neptune")
 	systray.AddSeparator()

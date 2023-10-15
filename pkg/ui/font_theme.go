@@ -29,7 +29,7 @@ func (*myTheme) Font(s fyne.TextStyle) fyne.Resource {
 }
 
 func (*myTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
-	return theme.DefaultTheme().Color(n, 1)
+	return theme.DefaultTheme().Color(n, 0)
 }
 
 func (*myTheme) Icon(n fyne.ThemeIconName) fyne.Resource {
