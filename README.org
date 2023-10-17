@@ -30,7 +30,9 @@ To install Neptune your Linux distribution just run .
 mkdir Neptune && tar -xf Neptune.tar.xz -C Neptune/ && cd Neptune; sudo make install
 #+end_src
 **** Arch Linux (AUR)
-(updated soon)
+#+begin_src bash
+yay -S realneptune
+#+end_src 
 *** Windows
 *Important Notice* Windows Defender will mistakenly flag the executable as malicious.
 But its not malicious because i don't own a signing certificate (This issue should disappear later)
