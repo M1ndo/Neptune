@@ -163,7 +163,7 @@ func (Ctx *NewContextPlayer) FindFileWithFallback(dir, name string, event bool) 
 	}
 	// Fallback file names
 	fallbackFiles, err := findFallBackFiles(dir)
-	if err != nil {
+	if err != nil || fallbackFiles == nil {
 		return "", fmt.Errorf("no matching files found and no fallback files available")
 	}
 	rIndex := rand.Intn(len(fallbackFiles))

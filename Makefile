@@ -7,7 +7,7 @@ WINDOWS_BINARY := Neptune.exe
 LINUX_BINARY := Neptune
 
 BUILD_COMMAND := fyne package --icon icon.png --appBuild 2 --appVersion 1.0.1 --release
-OPTIMIZE_GCC := CGO_CFLAGS="-flto -O2 -Os" CGO_LDFLAGS="-flto"
+OPTIMIZE_GCC := CGO_CFLAGS="-flto -O2" CGO_LDFLAGS="-flto"
 CLEAN_COMMAND := rm -rf $(OUTPUT_DIR)
 
 .PHONY: all clean $(PLATFORMS)
