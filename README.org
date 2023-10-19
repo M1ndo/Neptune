@@ -23,14 +23,16 @@ to cross-compile from Linux to MacOs its very troublesome and requires building 
 ** Binaries.
 Both Windows And Linux binaries are for x86_64 architecture only.
 More to come soon.
-Headover to the [[https://github.com/M1ndo/Neptune/releases/tag/v1.0.0][Releases]] and download the appropriate build for your machine.
+Headover to the [[https://github.com/M1ndo/Neptune/releases/tag/v1.0.1][Releases]] and download the appropriate build for your machine.
 *** Linux
 To install Neptune your Linux distribution just run .
 #+begin_src bash
 mkdir Neptune && tar -xf Neptune.tar.xz -C Neptune/ && cd Neptune; sudo make install
 #+end_src
 **** Arch Linux (AUR)
-(updated soon)
+#+begin_src bash
+yay -S realneptune
+#+end_src 
 *** Windows
 *Important Notice* Windows Defender will mistakenly flag the executable as malicious.
 But its not malicious because i don't own a signing certificate (This issue should disappear later)
@@ -84,6 +86,8 @@ If you going to run the app for the first time on CLI, use =-download= to downlo
 Neptune -cli -download
 #+end_src
 ** Custom Sounds keys
+View this [[https://ybenel.cf/post/neptune_tutorial/][Tutorial]] Showing how to create your own soundkey.
+
 Setting/Creating a custom keys is very simple and doesn't require to write any configurations.
 Be in the following folder
 - For Linux:  =~/.local/share/Neptune=
