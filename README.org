@@ -31,7 +31,9 @@ mkdir Neptune && tar -xf Neptune.tar.xz -C Neptune/ && cd Neptune; sudo make ins
 #+end_src
 **** Arch Linux (AUR)
 #+begin_src bash
-yay -S realneptune
+yay -S realneptune # (BINARY)
+# OR BUILD (GIT VERSION)
+yay -S realneptune-git
 #+end_src 
 *** Windows
 *Important Notice* Windows Defender will mistakenly flag the executable as malicious.
