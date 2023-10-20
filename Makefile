@@ -6,7 +6,7 @@ OUTPUT_DIR := builds
 WINDOWS_BINARY := Neptune.exe
 LINUX_BINARY := Neptune
 
-FYNE_EXISTS := $(shell command -v fyne2 2> /dev/null)
+FYNE_EXISTS := $(shell command -v fyne 2> /dev/null)
 BUILD_COMMAND := fyne package --icon icon.png --appBuild 2 --appVersion 1.0.1 --release
 
 OPTIMIZE_GCC := CGO_CFLAGS="-flto -O2" CGO_LDFLAGS="-flto"
@@ -20,22 +20,28 @@ Name := "Neptune"
 Exec := "Neptune"
 Icon := "Neptune.png"
 
-# .PHONY: all clean $(PLATFORMS)
-
 .PHONY: all
 all: $(PLATFORMS) move
 
 .PHONY: windows
+windows: BUILD_COMMAND := fyne package --icon icon.png --appBuild 2 --appVersion 1.0.1 --release
+windows: GOOS := windows
+windows: CC := x86_64-w64-mingw32-gcc
+windows: CXX := x86_64-w64-mingw32-g++
 windows:
 	@echo "Building for windows"
-	CGO_ENABLED=1 GOOS=windows GOARCH=amd64 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ $(BUILD_COMMAND) --name $(WINDOWS_BINARY) -os windows
+	$(if $(FYNE_EXISTS), \
+		CGO_ENABLED=1 GOOS=$(GOOS) CC=$(CC) CXX=$(CXX) $(BUILD_COMMAND) --name $(WINDOWS_BINARY) -os $(GOOS), \
+		CGO_ENABLED=1 GOOS=$(GOOS) CC=$(CC) CXX=$(CXX) $(OPTIMIZE_GCC) go build . \
+	)
 
 .PHONY: linux
+linux: GOOS := linux
 linux:
 	@echo "Building for linux"
 	$(if $(FYNE_EXISTS), \
-		CGO_ENABLED=1 GOOS=linux $(OPTIMIZE_GCC) $(BUILD_COMMAND) --name $(LINUX_BINARY) -os linux, \
-		CGO_ENABLED=1 GOOS=linux $(OPTIMIZE_GCC) go build -o misc/usr/local/bin/ . \
+		CGO_ENABLED=1 GOOS=$(GOOS) $(OPTIMIZE_GCC) $(BUILD_COMMAND) --name $(LINUX_BINARY) -os $(GOOS), \
+		CGO_ENABLED=1 GOOS=$(GOOS) $(OPTIMIZE_GCC) go build -o misc/usr/local/bin/ . \
 	)
 
 .PHONY: move
