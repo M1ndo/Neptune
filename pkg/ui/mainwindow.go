@@ -14,7 +14,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	// xwidget "fyne.io/x/fyne/widget"
-	"github.com/getlantern/systray"
+	"github.com/m1ndo/Neptune/pkg/sdata"
 )
 
 func (ui *UiApp) NewApp() error {
@@ -22,7 +22,7 @@ func (ui *UiApp) NewApp() error {
 	ui.Logger = ui.AppIn.SetLogger()
 	app := app.NewWithID("cf.ybenel.Neptune")
 	app.Settings().SetTheme(&myTheme{})
-	app.SetIcon(IconRes)
+	app.SetIcon(sdata.IconRes)
 	w := app.NewWindow("Neptune")
 	w.Resize(fyne.NewSize(460, 400))
 	w.SetFixedSize(true)
@@ -45,7 +45,7 @@ func (ui *UiApp) NewApp() error {
 	nAuthText := container.NewCenter(authText)
 
 	// Logo
-	logo := canvas.NewImageFromResource(NeptuneRes)
+	logo := canvas.NewImageFromResource(sdata.NeptuneRes)
 	logo.FillMode = canvas.ImageFillContain
 	logo.SetMinSize(fyne.NewSize(256, 256))
 	// Spinning Logo
@@ -154,40 +154,4 @@ func (ui *UiApp) DownloadSounds() bool {
 	}
 	ui.NotifMsg = fyne.NewNotification("Neptune", "All sounds are available")
 	return false
-}
-
-// Register systray
-func (ui *UiApp) SystrayRun() {
-	systray.Run(ui.OnReady, nil)
-}
-
-// onReady() For systray
-func (ui *UiApp) OnReady() {
-	systray.SetTemplateIcon(IcoRes.Content(), IcoRes.Content())
-	systray.SetIcon(icoRes.Content())
-	systray.SetTitle("Neptune")
-	systray.SetTooltip("Neptune")
-	systray.AddSeparator()
-	mShow := systray.AddMenuItem("Show", "Show the main app")
-	mStart := systray.AddMenuItem("Start", "Start the soundkeys")
-	mPause := systray.AddMenuItem("Stop", "Stop the soundkeys")
-	mRand := systray.AddMenuItem("Rand", "Use a random soundkey")
-	mQuitOrig := systray.AddMenuItem("Quit", "Quit the whole app")
-	go func() {
-		for {
-			select {
-			case <-mShow.ClickedCh:
-				ui.MainWindow.Show()
-			case <-mStart.ClickedCh:
-				ui.AppIn.AppRun()
-			case <-mPause.ClickedCh:
-				ui.AppIn.AppStop()
-			case <-mRand.ClickedCh:
-				ui.AppIn.AppRand()
-			case <-mQuitOrig.ClickedCh:
-				ui.MainWindow.Close()
-				systray.Quit()
-			}
-		}
-	}()
 }
