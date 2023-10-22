@@ -2,8 +2,8 @@
   Icon = "icon.png"
   Name = "Neptune"
   ID = "cf.ybenel.Neptune"
-  Version = "1.0.1"
-  Build = 6
+  Version = "1.0.2"
+  Build = 12
 
 [Development]
   HelperText = "Neptune Keysounds Made Free"
