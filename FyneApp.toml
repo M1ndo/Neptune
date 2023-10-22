@@ -3,7 +3,7 @@
   Name = "Neptune"
   ID = "cf.ybenel.Neptune"
   Version = "1.0.2"
-  Build = 12
+  Build = 1
 
 [Development]
   HelperText = "Neptune Keysounds Made Free"

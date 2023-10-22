@@ -7,7 +7,7 @@ WINDOWS_BINARY := Neptune.exe
 LINUX_BINARY := Neptune
 
 FYNE_EXISTS := $(shell command -v fyne 2> /dev/null)
-BUILD_COMMAND := fyne package --icon icon.png --appBuild 2 --appVersion 1.0.1 --release
+BUILD_COMMAND := fyne package --icon icon.png --release
 
 OPTIMIZE_GCC := CGO_CFLAGS="-flto -O2" CGO_LDFLAGS="-flto"
 CLEAN_COMMAND := rm -rf $(OUTPUT_DIR)
@@ -39,24 +39,18 @@ windows:
 
 .PHONY: linux
 linux: GOOS := linux
-linux: CC ?= gcc
-linux: CXX ?= g++
-linux: GOARCH ?= amd64
 linux:
 	@echo "Building for linux"
 	$(if $(and $(PKG), $(FYNE_EXISTS)), \
-		CGO_ENABLED=1 GOOS=$(GOOS) GOARCH=$(GOARCH) CC=$(CC) CXX=$(CXX) $(OPTIMIZE_GCC) $(BUILD_COMMAND) --name $(LINUX_BINARY) -os $(GOOS), \
-		CGO_ENABLED=1 GOOS=$(GOOS) GOARCH=$(GOARCH) CC=$(CC) CXX=$(CXX) $(OPTIMIZE_GCC) go build -ldflags="-s -w" $(if $(TAGS),,$(SYSTRAY)) -o misc/usr/local/bin/ \
+		CGO_ENABLED=1 GOOS=$(GOOS) $(OPTIMIZE_GCC) $(BUILD_COMMAND) --name $(LINUX_BINARY) -os $(GOOS), \
+		CGO_ENABLED=1 GOOS=$(GOOS) $(OPTIMIZE_GCC) go build -ldflags="-s -w" $(if $(TAGS),,$(SYSTRAY)) -o misc/usr/local/bin/ \
 	)
 
 .PHONY: linux-cli
 linux-cli: GOOS := linux
-linux-cli: CC ?= gcc
-linux-cli: CXX ?= g++
-linux-cli: GOARCH ?= amd64
 linux-cli:
 	@echo "Building CLI for linux"
-		CGO_ENABLED=1 GOOS=$(GOOS) GOARCH=$(GOARCH) CC=$(CC) CXX=$(CXX) $(OPTIMIZE_GCC) go build -ldflags="-s -w" $(if $(TAGS),,$(SYSTRAY)) -o misc/usr/local/bin/$(LINUX_BINARY) cmd/Neptune-Cli/main.go
+		CGO_ENABLED=1 GOOS=$(GOOS) $(OPTIMIZE_GCC) go build -ldflags="-s -w" $(if $(TAGS),,$(SYSTRAY)) -o misc/usr/local/bin/$(LINUX_BINARY) cmd/Neptune-Cli/main.go
 
 .PHONY: darwin
 darwin: GOOS := darwin
