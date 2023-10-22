@@ -2,13 +2,13 @@
 #+AUTHOR: ybenel (m1ndo)
 #+HTML: <img src="imgs/neptune.png" align="right" width="400" height="400">
 
-Neptune is a virtual application that produces a sound upon key activation, resembling a physical mechanical keyboard (Or any sound you want!).
-Unlike its real-life counterpart, Neptune spares you from disturbing those nearby. It bears a striking resemblance to mechvibes, but with notable advantages: superior speed, being coded in Go instead of JavaScript and Electron, thus eliminating excessive RAM and CPU consumption.
+Neptune is versatile application that produces a sound when keys are pressed. It offers the advantage of providing a realistic typing experience without disturbing those around you.
+With its superior speed, minimal almost no CPU usage, and low memory footprint (6-17MB), Neptune is an efficient solution for whether you want to simulate a mechanical keyboard, turn it into a piano, or experiment with other sounds. Developed using Go, Neptune ensures optimal performance and responsiveness.
 
 * Supported
 - [X] Linux (Works in both X11/Wayland)
 - [X] Windows (Works)
-- [-] MacOs (Untested)
+- [-] MacOs (Works)
 - [-] BSD (Untested)
 
 * Screenshot // Demo (Sound on)
@@ -16,52 +16,97 @@ Unlike its real-life counterpart, Neptune spares you from disturbing those nearb
 #+HTML: <video src="https://github.com/M1ndo/Neptune/assets/44820142/53b35d60-24be-44d1-9b96-fbbc46e27bbe"> </video>
 
 
-* Installation / Buildings.
+* Installation.
 By default i provide pre-built binaries for both Linux and Windows,
 I'd include MacOS as well if i had a MacOs machine to build the app, although it is possible
 to cross-compile from Linux to MacOs its very troublesome and requires building a toolchain and whatnot.
-** Binaries.
-Both Windows And Linux binaries are for x86_64 architecture only.
-More to come soon.
-Headover to the [[https://github.com/M1ndo/Neptune/releases/tag/v1.0.1][Releases]] and download the appropriate build for your machine.
-*** Linux
-To install Neptune your Linux distribution just run .
-#+begin_src bash
-mkdir Neptune && tar -xf Neptune.tar.xz -C Neptune/ && cd Neptune; sudo make install
+
+** Runtime dependencies (Linux Only).
+There's few runtime dependencies required in order to run/build Neptune (cli or gui).
+If you're running Ubuntu/Debian based, there's a high change you won't need to install any of the following dependencies.
+#+begin_src shell
+apt install libx11-6 libxtst6 libx11-xcb1 libxcb-xkb1 libxkbcommon0 libxkbcommon-x11-0 libasound2 libayatana-appindicator3-1 libxxf86vm1 libgl1
 #+end_src
+*ARCH* use the AUR to install the dependencies and the package.
+** Binaries (CLI / GUI).
+Both Windows And Linux built binaries are for x86_64 (amd64) architecture only more to come soon.
+Headover to the [[https://github.com/M1ndo/Neptune/releases/tag/v1.0.2][Releases]] and download the appropriate build for your machine.
+*** Linux
 **** Arch Linux (AUR)
 #+begin_src bash
 yay -S realneptune # (BINARY)
+yay -S realneptune-cli # (BINARY)
 # OR BUILD (GIT VERSION)
 yay -S realneptune-git
-#+end_src 
+yay -S realneptune-cli-git
+#+end_src
+**** Ubuntu/Debian
+#+begin_src bash
+sudo dpkg -i Neptune-1.0.2-1.deb
+# CLI
+sudo dpkg -i Neptune-Cli-1.0.2-1.deb
+#+end_src
+**** Other distros.
+***** GUI
+To install Neptune your Linux distribution (make sure you have download the latest release)
+#+begin_src bash
+mkdir Neptune && tar -xf Neptune.tar.xz -C Neptune/ && cd Neptune; sudo make install
+#+end_src
+***** CLI
+#+begin_src bash
+sudo wget https://github.com/M1ndo/Neptune/releases/download/v1.0.2/Neptune-Cli -O /usr/bin/Neptune && chmod +x /usr/bin/Neptune
+#+end_src
 *** Windows
 *Important Notice* Windows Defender will mistakenly flag the executable as malicious.
 But its not malicious because i don't own a signing certificate (This issue should disappear later)
 If you get a defender smart screen just click on *Show and Run this file* .
-** Building.
+*** MacOs
+Unavailable at the moment (Soon)
+* Building.
 To build *Neptune* you'll have to satisfy few requirements.
-- Golang version >1.21
+- Golang version >1.19
 - GCC or Clang compiler
 - Mingw64 (Windows)
-- o64-clang / Clang (MacOS)
-*** With Make and fyne
-#+begin_src  bash
+- make
+- [[https://github.com/fyne-io/fyne][Fyne]] (Optional)
+
+Use *TAGS="nosystray"* if you don't wanna build with a systray (Mandatory for MacOs "systray broken").
+Use *PKG=fyne* to package/build with fyne.
+
+To change architecture and compiler, use eg.
+#+begin_src bash
+GOARCH=arm CC=arm-linux-gnueabihf-gcc CXX=arm-linux-gnueabihf-g++ make linux # windows , darwin
+#+end_src
+** Linux
+Make sure you have all runtime dependencies installed.
+#+begin_src bash
 make linux
 # OR
+make linux-cli
+#+end_src
+** Windows
+#+begin_src bash
 make windows
 #+end_src
-*** Linux / MacOs
+** MacOs
 #+begin_src bash
-CGO_ENABLED=1 CC=gcc CXX=g++ go build . # Be inside of Neptune Directory.
+TAGS="nosystray" make darwin
+# OR CLI
+TAGS="nosystray" make darwin-cli
 #+end_src
-*** Windows
+
+* Command Line
+*NOTE*: GUI Neptune is also built with CLI Mode
+To run Neptune in CLI mode
 #+begin_src bash
-GOOS=windows GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ go build -ldflags -H=windowsgui .
+Neptune -cli -download # (Downloads Missing sounds "First time run")
 #+end_src
-* Command Line / GUI
-By default running Neptune will open up the *GUI interface*.
-Both modes do not eat your ram and cpu however CLI mode is more efficient if you using a WM.
+#+begin_src bash
+Neptune -cli -soundkey "Alpacas" # Use Alpacas Soundkey
+#+end_src
+#+begin_src bash
+Neptune -lst # List Available installed sound keys.
+#+end_src
 ** CLI Options
 #+begin_src bash
 Usage of Neptune:
@@ -83,10 +128,6 @@ Usage of Neptune:
 * Keysounds.
 By default =nk-cream= keysounds are embedded in the app so it doesn't require any assets.
 By default when your first run the app on *GUI* mode, it will download the missing sounds and the app will restart itself.
-If you going to run the app for the first time on CLI, use =-download= to download missing sounds (no need to restart)
-#+begin_src bash
-Neptune -cli -download
-#+end_src
 ** Custom Sounds keys
 View this [[https://ybenel.cf/post/neptune_tutorial/][Tutorial]] Showing how to create your own soundkey.
 
@@ -100,7 +141,7 @@ Then let's say you want to create a custom key for "key a" all you have to do is
 It should be *.wav* or *.ogg* and call it =a.wav= and that's it .
 - So it would be like =alt= -> =alt.wav= or =alt.ogg=
 If you're not sure about the key name read this [[https://github.com/M1ndo/Neptune/blob/main/pkg/neptune/keycode.go][file]] variable =LEcode2Char=
-*** Fallback sounds.
+** Fallback sounds.
 Let say you want to create a custom sound but you don't wanna customize each key.
 This is where fallback sound keys come in. all you have to do is have a sound file that will be played
 for every other key that doesn't have its sound file.
@@ -112,8 +153,9 @@ fallback2.wav
 fallback3.ogg
 fallbackgg.wav
 #+end_src
-*** Key Events (up and down)
+** Key Events (up and down)
 Neptune supports keyevents. so that when you click on a key it will play a sound and when u release that key it will play another sound.
+
 To define a multi event keysound. just append the keyword *-up* to the soundfile.
 
 Let's say you have a soundfile for key "shift", like =shift.wav= this will be played when the key is pressed.
@@ -121,6 +163,7 @@ For when its released that soundfile should be =shift-up.wav=.
 - Key like =alt.wav= its release event sound file will be =alt-up.wav=
 This also works for *fallback* keys, so there could =fallback.wav= =fallback-up= =fallback2.ogg= =fallback2-up.ogg= and so on.
 However there one thing you add to let Neptune know that this soundkey supports multi events.
+
 Edit config.json in soundkey directory you created and add this (name is optional).
 #+begin_src json
 {
@@ -135,4 +178,4 @@ If you wanna consider supporting this project by donating, please spare some cas
 Written by [[https://github.com/m1ndo][ybenel]]
 * License
 AGPLv3
-#  LocalWords:  Golang
+#  LocalWords:  Golang distros Mingw fyne

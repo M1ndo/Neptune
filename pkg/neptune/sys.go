@@ -1,8 +1,11 @@
+//go:build systray
+// +build systray
+
 package neptune
 
 import (
 	"github.com/getlantern/systray"
-	"github.com/m1ndo/Neptune/pkg/ui"
+	"github.com/m1ndo/Neptune/pkg/sdata"
 )
 
 type Sys struct {
@@ -10,14 +13,13 @@ type Sys struct {
 }
 
 func (App *Sys) Init() {
+	go App.AppRun()
 	systray.Run(App.onReady, nil)
 }
 
 func (App *Sys) onReady() {
-	go App.AppRun()
-	systray.SetTemplateIcon(ui.IcoRes.Content(), ui.IcoRes.Content())
-	systray.SetIcon(ui.IcoRes.Content())
-	// systray.SetIcon(ui.IconRes.Content())
+	systray.SetTemplateIcon(sdata.IcoRes.Content(), sdata.IcoRes.Content())
+	systray.SetIcon(sdata.IcoRes.Content())
 	systray.SetTitle("Neptune")
 	systray.SetTooltip("Neptune")
 	systray.AddSeparator()

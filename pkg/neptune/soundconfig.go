@@ -105,7 +105,9 @@ func (c *SConfig) ReadConfig() error {
 		defer fopen.Close()
 		data := json.NewDecoder(fopen)
 		if err := data.Decode(c.Config); err != nil {
-			return err
+			c.AppIn.Logger.Log.Debug("No Configuration is set using default")
+			c.Config.IsMulti = false
+			c.Config.Name = "Custom"
 		}
 	}
 	return nil
