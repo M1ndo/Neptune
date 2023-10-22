@@ -24,7 +24,7 @@ to cross-compile from Linux to MacOs its very troublesome and requires building 
 ** Runtime dependencies (Linux Only).
 There's few runtime dependencies required in order to run/build Neptune (cli or gui).
 If you're running Ubuntu/Debian based, there's a high change you won't need to install any of the following dependencies.
-#+begin_src shell
+#+begin_src c
 apt install libx11-6 libxtst6 libx11-xcb1 libxcb-xkb1 libxkbcommon0 libxkbcommon-x11-0 libasound2 libayatana-appindicator3-1 libxxf86vm1 libgl1
 #+end_src
 *ARCH* use the AUR to install the dependencies and the package.
@@ -33,7 +33,7 @@ Both Windows And Linux built binaries are for x86_64 (amd64) architecture only m
 Headover to the [[https://github.com/M1ndo/Neptune/releases/tag/v1.0.2][Releases]] and download the appropriate build for your machine.
 *** Linux
 **** Arch Linux (AUR)
-#+begin_src bash
+#+begin_src c
 yay -S realneptune # (BINARY)
 yay -S realneptune-cli # (BINARY)
 # OR BUILD (GIT VERSION)
@@ -41,7 +41,7 @@ yay -S realneptune-git
 yay -S realneptune-cli-git
 #+end_src
 **** Ubuntu/Debian
-#+begin_src bash
+#+begin_src C
 sudo dpkg -i Neptune-1.0.2-1.deb
 # CLI
 sudo dpkg -i Neptune-Cli-1.0.2-1.deb
@@ -74,22 +74,22 @@ Use *TAGS="nosystray"* if you don't wanna build with a systray (Mandatory for Ma
 Use *PKG=fyne* to package/build with fyne.
 
 To change architecture and compiler, use eg.
-#+begin_src bash
+#+begin_src c
 GOARCH=arm CC=arm-linux-gnueabihf-gcc CXX=arm-linux-gnueabihf-g++ make linux # windows , darwin
 #+end_src
 ** Linux
 Make sure you have all runtime dependencies installed.
-#+begin_src bash
+#+begin_src c
 make linux
 # OR
 make linux-cli
 #+end_src
 ** Windows
-#+begin_src bash
+#+begin_src c
 make windows
 #+end_src
 ** MacOs
-#+begin_src bash
+#+begin_src c
 TAGS="nosystray" make darwin
 # OR CLI
 TAGS="nosystray" make darwin-cli
@@ -98,17 +98,17 @@ TAGS="nosystray" make darwin-cli
 * Command Line
 *NOTE*: GUI Neptune is also built with CLI Mode
 To run Neptune in CLI mode
-#+begin_src bash
+#+begin_src c
 Neptune -cli -download # (Downloads Missing sounds "First time run")
 #+end_src
-#+begin_src bash
+#+begin_src c
 Neptune -cli -soundkey "Alpacas" # Use Alpacas Soundkey
 #+end_src
-#+begin_src bash
+#+begin_src c
 Neptune -lst # List Available installed sound keys.
 #+end_src
 ** CLI Options
-#+begin_src bash
+#+begin_src c
 Usage of Neptune:
   -cli
         Run in CLI instead of GUI
@@ -147,7 +147,7 @@ This is where fallback sound keys come in. all you have to do is have a sound fi
 for every other key that doesn't have its sound file.
 The fallback file can be anywhere from (it only needs to have a keyword fallback)
 And there could be multiple fallback files (all fallback files will be used randomly on each click)
-#+begin_src bash
+#+begin_src c
 fallback.wav
 fallback2.wav
 fallback3.ogg
