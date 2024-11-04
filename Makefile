@@ -27,9 +27,9 @@ all: $(PLATFORMS) move
 .PHONY: windows
 windows: BUILD_COMMAND := fyne package --icon icon.png --release
 windows: GOOS := windows
-windows: CC ?= x86_64-w64-mingw32-gcc
-windows: CXX ?= x86_64-w64-mingw32-g++
-windows: GOARCH ?= amd64
+windows: CC := x86_64-w64-mingw32-gcc
+windows: CXX := x86_64-w64-mingw32-g++
+windows: GOARCH := amd64
 windows:
 	@echo "Building for windows"
 	$(if $(and $(PKG), $(FYNE_EXISTS)), \
